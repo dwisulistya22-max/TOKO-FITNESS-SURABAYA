@@ -3,7 +3,8 @@ export const STORE_CONFIG = {
   logo: "https://i.ibb.co/Lhb85T8/Surabaya-Fitness-Logo.jpg?v=2",
   slogan: "Kualitas Gym Profesional, Di Rumah Anda",
   phone: "6281332345448",
-  email: "info@fitnesssurabaya.com",
+  email: "dwisulistya22@gmail.com
+",
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
   hero: {
     title: "Kualitas Gym Profesional Di Rumah Anda",
