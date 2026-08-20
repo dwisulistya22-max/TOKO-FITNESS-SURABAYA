@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Categories from './components/Categories';
@@ -6,108 +7,116 @@ import WhyChooseUs from './components/WhyChooseUs';
 import Testimonials from './components/Testimonials';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
-import AdminDashboard from './components/AdminDashboard';
-import { useState, useEffect } from 'react';
-import { STORE_CONFIG } from './data/config';
+import {
+  STORE_CONFIG as FALLBACK_CONFIG,
+  CATEGORIES as FALLBACK_CATEGORIES,
+  PRODUCTS as FALLBACK_PRODUCTS,
+} from './data/config';
+import {
+  getStoreInfo,
+  getAllCategories,
+  getAllProducts,
+} from './utils/sanity';
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [isAdmin, setIsAdmin] = useState(false);
-  const [logo, setLogo] = useState(STORE_CONFIG.logo);
+  const [localIsAdmin, setLocalIsAdmin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
-  // Load state login & logo
+  const [storeConfig, setStoreConfig] = useState<any>(FALLBACK_CONFIG);
+  const [categories, setCategories] = useState<any[]>(FALLBACK_CATEGORIES);
+  const [products, setProducts] = useState<any[]>(FALLBACK_PRODUCTS);
+  const [logo, setLogo] = useState(FALLBACK_CONFIG.logo);
+
   useEffect(() => {
-    const savedAdmin = localStorage.getItem('is_super_admin');
-    if (savedAdmin === 'true') {
-      setIsAdmin(true);
-      setShowAdminPanel(true);
+    async function fetchSanityData() {
+      try {
+        console.log('Fetching data from Sanity...');
+
+        const [categoriesData, productsData, storeData] = await Promise.all([
+          getAllCategories(),
+          getAllProducts(),
+          getStoreInfo(),
+        ]);
+
+        console.log('Sanity categories:', categoriesData);
+        console.log('Sanity products:', productsData);
+
+        if (categoriesData && categoriesData.length > 0) {
+          setCategories(
+            categoriesData.map((cat: any, index: number) => ({
+              id: cat._id || index + 1,
+              name: cat.name || 'Kategori',
+              image: cat.image || '',
+              description: cat.description || '',
+            }))
+          );
+          console.log('Categories UPDATED from Sanity!', categoriesData.length);
+        }
+
+        if (productsData && productsData.length > 0) {
+          setProducts(
+            productsData.map((p: any, index: number) => ({
+              id: p._id || index + 1,
+              name: p.name || 'Produk',
+              price: p.price ?? 0,
+              category: p.category || '',
+              image: p.image || '',
+              rating: p.rating ?? 5,
+              description: p.description || '',
+            }))
+          );
+          console.log('Products UPDATED from Sanity!', productsData.length);
+        }
+
+        if (storeData) {
+          setStoreConfig({
+            ...FALLBACK_CONFIG,
+            name: storeData.name || FALLBACK_CONFIG.name,
+            slogan: storeData.slogan || FALLBACK_CONFIG.slogan,
+            phone: storeData.phone || FALLBACK_CONFIG.phone,
+            email: storeData.email || FALLBACK_CONFIG.email,
+            address: storeData.address || FALLBACK_CONFIG.address,
+            logo: storeData.logo || FALLBACK_CONFIG.logo,
+          });
+          if (storeData.logo) setLogo(storeData.logo);
+        }
+      } catch (err) {
+        console.error('Error fetching Sanity:', err);
+      }
     }
 
-    const savedLogo = localStorage.getItem('fitness_logo');
-    // Pastikan logo yang tersimpan tidak kosong atau null
-    if (savedLogo && savedLogo.length > 5) {
-      setLogo(savedLogo);
-    } else {
-      setLogo(STORE_CONFIG.logo);
-    }
+    fetchSanityData();
   }, []);
 
-  const handleLogoChange = (newLogo: string) => {
-    setLogo(newLogo);
-    localStorage.setItem('fitness_logo', newLogo);
-  };
-
-  const handleLogin = () => {
-    if (isAdmin) {
-      setShowAdminPanel(true);
-      return;
-    }
-    
-    const pass = prompt("Masukkan Password Super Admin:");
-    if (pass === "admin123") {
-      setIsAdmin(true);
-      setShowAdminPanel(true);
-      localStorage.setItem('is_super_admin', 'true');
-      alert("Selamat Datang di Panel Kontrol Surabaya Fitness!");
-    } else {
-      alert("Password Salah!");
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAdmin(false);
-    setShowAdminPanel(false);
-    localStorage.setItem('is_super_admin', 'false');
-  };
-
-  if (showAdminPanel) {
-    return (
-      <AdminDashboard 
-        onLogout={handleLogout} 
-        logo={logo} 
-        onLogoChange={handleLogoChange} 
-      />
-    );
-  }
+  const filteredProducts =
+    activeCategory === 'Semua'
+      ? products
+      : products.filter((p) => p.category === activeCategory);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
-      <Navbar isAdmin={false} logo={logo} onLogoChange={handleLogoChange} />
-      <main>
-        <Hero isAdmin={false} logo={logo} onLogoChange={handleLogoChange} />
-        <Categories onSelectCategory={setActiveCategory} isAdmin={false} />
-        <FeaturedProducts 
-          activeCategory={activeCategory} 
-          onCategoryChange={setActiveCategory} 
-          isAdmin={false}
-          setIsAdmin={() => {}}
-        />
-        <WhyChooseUs />
-        <Testimonials />
-        
-        {/* Newsletter Section */}
-        <section className="py-20 bg-red-600">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Dapatkan Update Promo Terbaru</h2>
-            <p className="text-red-100 mb-8 max-w-xl mx-auto">
-              Berlangganan newsletter kami untuk mendapatkan info produk terbaru dan diskon eksklusif {STORE_CONFIG.name}.
-            </p>
-            <form className="max-w-md mx-auto flex gap-4" onSubmit={(e) => e.preventDefault()}>
-              <input 
-                type="email" 
-                placeholder="Alamat Email Anda" 
-                className="flex-1 px-6 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-              <button className="bg-gray-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors">
-                Daftar
-              </button>
-            </form>
-          </div>
-        </section>
-      </main>
-      <Footer isAdmin={isAdmin} logo={logo} onLogin={handleLogin} />
-      <WhatsAppButton />
+    <div className="min-h-screen bg-white">
+      <Navbar
+        logo={logo}
+        storeConfig={storeConfig}
+      />
+      <Hero storeConfig={storeConfig} />
+      <Categories
+        categories={categories}
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+        localIsAdmin={localIsAdmin}
+        setLocalIsAdmin={setLocalIsAdmin}
+      />
+      <FeaturedProducts
+        products={filteredProducts}
+        activeCategory={activeCategory}
+      />
+      <WhyChooseUs />
+      <Testimonials />
+      <Footer storeConfig={storeConfig} />
+      <WhatsAppButton phone={storeConfig?.phone || FALLBACK_CONFIG.phone} />
     </div>
   );
 }
