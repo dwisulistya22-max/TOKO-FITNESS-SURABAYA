@@ -20,9 +20,7 @@ import {
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
-  const [isAdmin, setIsAdmin] = useState(false);
   const [localIsAdmin, setLocalIsAdmin] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const [storeConfig, setStoreConfig] = useState<any>(FALLBACK_CONFIG);
   const [categories, setCategories] = useState<any[]>(FALLBACK_CATEGORIES);
@@ -31,18 +29,12 @@ function App() {
 
   useEffect(() => {
     async function fetchSanityData() {
+      // 1. Ambil Kategori dari Sanity (Mandiri)
       try {
-        console.log('Fetching data from Sanity...');
-
-        const [categoriesData, productsData, storeData] = await Promise.all([
-          getAllCategories(),
-          getAllProducts(),
-          getStoreInfo(),
-        ]);
-
-        if (categoriesData && categoriesData.length > 0) {
+        const catData = await getAllCategories();
+        if (catData && catData.length > 0) {
           setCategories(
-            categoriesData.map((cat: any, index: number) => ({
+            catData.map((cat: any, index: number) => ({
               id: cat._id || index + 1,
               name: cat.name || 'Kategori',
               image: cat.image || '',
@@ -50,10 +42,16 @@ function App() {
             }))
           );
         }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
 
-        if (productsData && productsData.length > 0) {
+      // 2. Ambil Produk dari Sanity (Mandiri)
+      try {
+        const prodData = await getAllProducts();
+        if (prodData && prodData.length > 0) {
           setProducts(
-            productsData.map((p: any, index: number) => ({
+            prodData.map((p: any, index: number) => ({
               id: p._id || index + 1,
               name: p.name || 'Produk',
               price: p.price ?? 0,
@@ -64,21 +62,27 @@ function App() {
             }))
           );
         }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+      }
 
+      // 3. Ambil Info Toko dari Sanity (Mandiri)
+      try {
+        const storeData = await getStoreInfo();
         if (storeData) {
-          setStoreConfig({
-            ...FALLBACK_CONFIG,
-            name: storeData.name || FALLBACK_CONFIG.name,
-            slogan: storeData.slogan || FALLBACK_CONFIG.slogan,
-            phone: storeData.phone || FALLBACK_CONFIG.phone,
-            email: storeData.email || FALLBACK_CONFIG.email,
-            address: storeData.address || FALLBACK_CONFIG.address,
-            logo: storeData.logo || FALLBACK_CONFIG.logo,
-          });
+          setStoreConfig((prev: any) => ({
+            ...prev,
+            name: storeData.name || prev.name,
+            slogan: storeData.slogan || prev.slogan,
+            phone: storeData.phone || prev.phone,
+            email: storeData.email || prev.email,
+            address: storeData.address || prev.address,
+            logo: storeData.logo || prev.logo,
+          }));
           if (storeData.logo) setLogo(storeData.logo);
         }
       } catch (err) {
-        console.error('Error fetching Sanity:', err);
+        console.error('Error fetching store info:', err);
       }
     }
 
