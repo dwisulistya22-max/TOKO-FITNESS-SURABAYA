@@ -40,9 +40,6 @@ function App() {
           getStoreInfo(),
         ]);
 
-        console.log('Sanity categories:', categoriesData);
-        console.log('Sanity products:', productsData);
-
         if (categoriesData && categoriesData.length > 0) {
           setCategories(
             categoriesData.map((cat: any, index: number) => ({
@@ -52,7 +49,6 @@ function App() {
               description: cat.description || '',
             }))
           );
-          console.log('Categories UPDATED from Sanity!', categoriesData.length);
         }
 
         if (productsData && productsData.length > 0) {
@@ -67,7 +63,6 @@ function App() {
               description: p.description || '',
             }))
           );
-          console.log('Products UPDATED from Sanity!', productsData.length);
         }
 
         if (storeData) {
