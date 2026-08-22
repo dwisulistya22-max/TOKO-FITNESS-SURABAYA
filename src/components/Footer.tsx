@@ -6,13 +6,13 @@ const SANITY_PROJECT_ID = 'qi4rocc0';
 const SANITY_DATASET = 'production';
 const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-interface FooterProps {
+export interface FooterProps {
   isAdmin?: boolean;
   logo?: string;
   onLogin?: () => void;
 }
 
-const Footer = ({ onLogin }: FooterProps) => {
+const Footer = (props: FooterProps) => {
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [imageError, setImageError] = useState<boolean>(false);
   const [storeData, setStoreData] = useState<any>({
@@ -50,7 +50,8 @@ const Footer = ({ onLogin }: FooterProps) => {
     fetchFooterData();
   }, []);
 
-  const phones = storeData.phone.split(/[/,&\n]/).map((p: string) => p.trim()).filter(Boolean);
+  const safePhone = storeData?.phone || STORE_CONFIG.phone || '6281235907956, 6281332345448';
+  const phones = safePhone.split(/[/,&\n]/).map((p: string) => p.trim()).filter(Boolean);
 
   return (
     <footer className="bg-gray-900 text-gray-300 pt-16 pb-12 border-t border-gray-800" id="tentang">
@@ -112,7 +113,7 @@ const Footer = ({ onLogin }: FooterProps) => {
                 <span>{storeData.address}</span>
               </li>
 
-              {/* TAMPILKAN 2 NOMOR WA */}
+              {/* TAMPILKAN DUA NOMOR WA */}
               <li className="flex items-start gap-3">
                 <Phone size={18} className="text-red-600 shrink-0 mt-1" />
                 <div className="space-y-1">
@@ -122,7 +123,7 @@ const Footer = ({ onLogin }: FooterProps) => {
                       href={`https://wa.me/${p.replace(/\D/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block hover:text-red-500 transition-colors font-semibold"
+                      className="block hover:text-red-500 transition-colors font-semibold text-white"
                     >
                       Admin {idx + 1}: +{p}
                     </a>
@@ -144,7 +145,7 @@ const Footer = ({ onLogin }: FooterProps) => {
           <p>© 2024 TOKO FITNESS SURABAYA. All rights reserved.</p>
           
           <button 
-            onClick={onLogin}
+            onClick={props.onLogin}
             className="text-gray-500 hover:text-gray-300 font-bold tracking-wider uppercase transition-colors"
           >
             SUPER ADMIN LOGIN
