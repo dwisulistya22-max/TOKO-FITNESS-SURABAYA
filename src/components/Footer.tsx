@@ -113,7 +113,7 @@ const Footer = (props: FooterProps) => {
                 <span>{storeData.address}</span>
               </li>
 
-              {/* TAMPILKAN DUA NOMOR WA */}
+              {/* DUA NOMOR WA */}
               <li className="flex items-start gap-3">
                 <Phone size={18} className="text-red-600 shrink-0 mt-1" />
                 <div className="space-y-1">
