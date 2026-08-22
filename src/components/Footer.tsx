@@ -12,9 +12,11 @@ interface FooterProps {
   onLogin?: () => void;
 }
 
-const Footer = ({ logo, onLogin }: FooterProps) => {
+const Footer = ({ onLogin }: FooterProps) => {
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [imageError, setImageError] = useState<boolean>(false);
   const [storeData, setStoreData] = useState<any>({
-    phone: STORE_CONFIG.phone || '6281235907956, 6281332345448',
+    phone: STORE_CONFIG.phone,
     address: STORE_CONFIG.address,
     email: STORE_CONFIG.email
   });
@@ -23,6 +25,7 @@ const Footer = ({ logo, onLogin }: FooterProps) => {
     const fetchFooterData = async () => {
       try {
         const query = encodeURIComponent(`*[_type in ["storeConfig", "storeInfo", "settings"]][0]{
+          "logo": logo.asset->url,
           "phone": coalesce(phone, whatsapp, ""),
           "address": coalesce(address, ""),
           "email": coalesce(email, "")
@@ -32,6 +35,7 @@ const Footer = ({ logo, onLogin }: FooterProps) => {
         const data = await response.json();
 
         if (data?.result) {
+          if (data.result.logo) setLogoUrl(data.result.logo);
           setStoreData({
             phone: data.result.phone || STORE_CONFIG.phone,
             address: data.result.address || STORE_CONFIG.address,
@@ -49,17 +53,29 @@ const Footer = ({ logo, onLogin }: FooterProps) => {
   const phones = storeData.phone.split(/[/,&\n]/).map((p: string) => p.trim()).filter(Boolean);
 
   return (
-    <footer className="bg-gray-900 text-gray-300 pt-16 pb-12 border-t border-gray-800">
+    <footer className="bg-gray-900 text-gray-300 pt-16 pb-12 border-t border-gray-800" id="tentang">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           
           {/* LOGO & DESKRIPSI */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              {logo ? (
-                <img src={logo} alt="Logo" className="h-12 w-auto object-contain" />
+              {logoUrl && !imageError ? (
+                <img 
+                  src={logoUrl} 
+                  alt="Logo" 
+                  className="h-12 w-auto object-contain" 
+                  onError={() => setImageError(true)}
+                />
               ) : (
-                <span className="text-xl font-black text-white">SURABAYA <span className="text-red-600">FITNESS</span></span>
+                <div className="flex items-center gap-2">
+                  <div className="bg-red-600 text-white font-black px-3 py-1 rounded-lg text-base">
+                    FS
+                  </div>
+                  <span className="text-xl font-black text-white">
+                    SURABAYA <span className="text-red-600">FITNESS</span>
+                  </span>
+                </div>
               )}
             </div>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
@@ -87,7 +103,7 @@ const Footer = ({ logo, onLogin }: FooterProps) => {
             </ul>
           </div>
 
-          {/* HUBUNGI KAMI (NOMOR DARI SANITY) */}
+          {/* HUBUNGI KAMI */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Hubungi Kami</h3>
             <ul className="space-y-3 text-sm text-gray-400">
@@ -96,7 +112,7 @@ const Footer = ({ logo, onLogin }: FooterProps) => {
                 <span>{storeData.address}</span>
               </li>
 
-              {/* LIST NOMOR WA 1 & 2 */}
+              {/* TAMPILKAN 2 NOMOR WA */}
               <li className="flex items-start gap-3">
                 <Phone size={18} className="text-red-600 shrink-0 mt-1" />
                 <div className="space-y-1">
