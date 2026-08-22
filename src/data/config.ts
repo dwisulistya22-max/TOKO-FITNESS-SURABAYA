@@ -6,21 +6,12 @@ export const STORE_CONFIG = {
   email: "dwisulistya22@gmail.com",
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
   
-  // 🧡 MASUKKAN LINK TOKO SHOPEE ANDA DI SINI
-  shopee: "https://shopee.co.id/search?keyword=toko%20fitness%20surabaya", 
+  // 🧡 GANTI DENGAN LINK TOKO SHOPEE ASLI ANDA DI SINI:
+  shopee: "https://shopee.co.id/link_toko_shopee_anda_disini", 
 
   hero: {
     title: "KUALITAS GYM PROFESIONAL DI RUMAH ANDA",
-    subtitle: "Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.",
+    subtitle: "Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.",
     tag: "PROMO CUCI GUDANG 2024"
   }
 };
-
-export const CATEGORIES = [
-  { id: 'cardio', name: 'Cardio' },
-  { id: 'strength', name: 'Strength' },
-  { id: 'homegym', name: 'Home Gym' },
-  { id: 'aksesoris', name: 'Aksesoris' }
-];
-
-export const PRODUCTS = [];
