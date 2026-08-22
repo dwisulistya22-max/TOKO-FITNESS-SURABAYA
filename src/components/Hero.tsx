@@ -5,9 +5,7 @@ const SANITY_PROJECT_ID = 'qi4rocc0';
 const SANITY_DATASET = 'production';
 const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-// Background gym gelap + lampu merah (gaya foto Anda)
-const DEFAULT_BG =
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
+const DARK_GYM_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
 
 export interface HeroProps {
   isAdmin?: boolean;
@@ -16,105 +14,115 @@ export interface HeroProps {
 }
 
 const Hero = (props: HeroProps) => {
-  const [data, setData] = useState({
+  const [heroData, setHeroData] = useState<any>({
     title: STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
-    subtitle:
-      STORE_CONFIG.hero?.subtitle ||
-      'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
+    subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
     tag: STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
-    bg: DEFAULT_BG,
-    poster: props.logo || '',
+    image: DARK_GYM_BG,
+    logo: props.logo || ''
   });
 
   useEffect(() => {
-    const load = async () => {
+    const fetchHeroAndLogo = async () => {
       try {
-        const bannerQ = encodeURIComponent(`*[_type in ["slider","banner","hero"]][0]{
+        const bannerQuery = encodeURIComponent(`*[_type in ["slider", "banner", "hero"]][0]{
           "title": coalesce(title, heading, name, ""),
-          "subtitle": coalesce(subtitle, description, subtext, ""),
+          "subtitle": coalesce(subtitle, description, subtext, desc, ""),
           "tag": coalesce(tag, badge, promo, label, ""),
-          "bg": coalesce(image.asset->url, photo.asset->url, bgImage.asset->url, "")
+          "image": coalesce(image.asset->url, photo.asset->url, bgImage.asset->url, "")
         }`);
-        const storeQ = encodeURIComponent(`*[_type in ["storeConfig","storeInfo","settings"]][0]{
+
+        const storeQuery = encodeURIComponent(`*[_type in ["storeConfig", "storeInfo", "settings"]][0]{
           "logo": logo.asset->url
         }`);
 
-        const [bRes, sRes] = await Promise.all([
-          fetch(`${SANITY_URL}${bannerQ}`, { cache: 'no-store' }),
-          fetch(`${SANITY_URL}${storeQ}`, { cache: 'no-store' }),
+        const [bannerRes, storeRes] = await Promise.all([
+          fetch(`${SANITY_URL}${bannerQuery}`, { cache: 'no-store' }),
+          fetch(`${SANITY_URL}${storeQuery}`, { cache: 'no-store' }),
         ]);
-        const b = (await bRes.json())?.result || {};
-        const s = (await sRes.json())?.result || {};
 
-        setData({
+        const bannerData = await bannerRes.json();
+        const storeData = await storeRes.json();
+
+        const b = bannerData?.result || {};
+        const s = storeData?.result || {};
+
+        setHeroData({
           title: b.title || STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
-          subtitle:
-            b.subtitle ||
-            STORE_CONFIG.hero?.subtitle ||
-            'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
+          subtitle: b.subtitle || STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
           tag: b.tag || STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
-          bg: b.bg && b.bg.length > 5 ? b.bg : DEFAULT_BG,
-          poster: props.logo || s.logo || '',
+          image: (b.image && b.image.length > 5) ? b.image : DARK_GYM_BG,
+          logo: props.logo || s.logo || STORE_CONFIG.logo
         });
-      } catch (e) {
-        console.error(e);
+
+      } catch (err) {
+        console.error('Error fetching Hero Data:', err);
       }
     };
-    load();
+
+    fetchHeroFromSanity();
   }, [props.logo]);
 
+  function fetchHeroFromSanity() {
+    // helper wrapper
+  }
+
+  const activeLogo = props.logo || heroData.logo || STORE_CONFIG.logo;
+
   return (
-    <section id="beranda" className="relative min-h-[82vh] md:min-h-[88vh] bg-black overflow-hidden">
-      {/* BACKGROUND FULL — mesin gym + lampu merah */}
-      <div className="absolute inset-0">
-        <img src={data.bg} alt="Gym" className="w-full h-full object-cover object-center" />
-        {/* Gelap di kiri/bawah biar logo & teks kebaca, kanan tetap kelihatan gym */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/55 to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/35" />
+    <section className="relative w-full min-h-[85vh] bg-black text-white overflow-hidden flex items-end pb-12 pt-20 antialiased" id="beranda">
+      
+      {/* BACKGROUND ATMOSFER GYM FULL LEBAR */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src={heroData.image}
+          alt="Gym Dark"
+          className="w-full h-full object-cover object-center opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/50 z-10" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[82vh] md:min-h-[88vh] flex items-end pb-10 md:pb-14 pt-28">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-          
-          {/* KOLOM KIRI: POSTER FS + BADGE MERAH */}
-          <div className="lg:col-span-5">
-            <div className="max-w-[400px] rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-black/30">
-              {data.poster ? (
-                <img
-                  src={data.poster}
-                  alt="FS Fitness Surabaya"
-                  className="w-full h-auto object-cover block"
-                />
-              ) : (
-                <div className="aspect-square flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-black p-8 text-center">
-                  <div className="text-6xl font-black text-cyan-300 mb-1">FS</div>
-                  <div className="text-2xl font-black text-white">FITNESS</div>
-                  <div className="text-2xl font-black text-blue-200">SURABAYA</div>
-                  <div className="text-[10px] mt-3 tracking-[0.25em] text-cyan-400 font-bold">
-                    FITNESS EQUIPMENT & ACCESSORIES
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5">
-              <span className="inline-flex bg-red-600 text-white text-xs sm:text-sm font-extrabold uppercase tracking-wide px-5 py-2.5 rounded-full shadow-lg shadow-red-600/50">
-                {data.tag}
-              </span>
-            </div>
-          </div>
-
-          {/* KOLOM KANAN/BAWAH: JUDUL RAKSASA PUTIH */}
-          <div className="lg:col-span-7 lg:pb-2">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-black uppercase leading-[0.95] tracking-tight text-white drop-shadow-2xl">
-              {data.title}
-            </h1>
-            <p className="mt-5 max-w-2xl text-gray-200 text-base sm:text-lg leading-relaxed">
-              {data.subtitle}
-            </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
+        
+        {/* POSTER LOGO BESAR KIRI (LOGONYA SAMA PERSIS DENGAN NAVBAR) */}
+        <div className="mb-6">
+          <div className="w-full max-w-[340px] sm:max-w-[400px] border border-gray-800 rounded-xl overflow-hidden bg-black/80 shadow-2xl">
+            {activeLogo ? (
+              <img
+                src={activeLogo}
+                alt="FS Fitness Surabaya Poster"
+                className="w-full h-auto object-cover block"
+              />
+            ) : (
+              <div className="p-8 text-center bg-gradient-to-b from-gray-900 to-black">
+                <span className="text-5xl font-black text-blue-400">FS</span>
+                <h3 className="text-xl font-bold text-white mt-2">FITNESS SURABAYA</h3>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* BADGE MERAH "PROMO CUCI GUDANG 2024" */}
+        <div className="mb-6">
+          <span className="bg-[#e60000] text-white px-5 py-2 rounded-full font-bold text-xs sm:text-sm tracking-wider inline-block shadow-lg uppercase">
+            {heroData.tag}
+          </span>
+        </div>
+
+        {/* TEKS TULISAN RAKSASA PUTIH, LEMBUT, DAN ELEGAN */}
+        <div className="max-w-4xl">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-black text-white leading-none tracking-tight uppercase drop-shadow-md">
+            {heroData.title}
+          </h1>
+
+          <p className="text-gray-300 text-base sm:text-xl font-normal mt-4 max-w-2xl leading-relaxed">
+            {heroData.subtitle}
+          </p>
+        </div>
+
       </div>
+
     </section>
   );
 };
