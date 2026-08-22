@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
+import { Mail, MessageCircle } from 'lucide-react';
 
 const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
 const ADMIN_PASSWORD = 'admin123'; 
@@ -59,11 +60,33 @@ function App() {
 
     if (jenisPaket === 'commercial') {
       message = `Halo Admin Surabaya Fitness 👋%0A%0ASaya tertarik dengan *PENAWARAN PAKET GYM COMMERCIAL / FITNESS CENTER*.%0AMohon kirimkan katalog paket, proposal, dan penawaran harga terbaik. Terima kasih!`;
+    } else if (jenisPaket === 'outdoor') {
+      message = `Halo Admin Surabaya Fitness 👋%0A%0ASaya tertarik dengan *PENAWARAN ALAT FITNESS OUTDOOR / TAMAN / FASILITAS PUBLIK*.%0AMohon kirimkan katalog produk outdoor, spesifikasi, dan pricelist-nya. Terima kasih!`;
     } else {
       message = `Halo Admin Surabaya Fitness 👋%0A%0ASaya tertarik dengan *PAKET PROMO HOME GYM / RUMAHAN*.%0AMohon rekomendasi paket alat fitness dan pricelist-nya. Terima kasih!`;
     }
 
     window.open(`https://wa.me/${waAdmin}?text=${message}`, '_blank');
+  };
+
+  // FUNGSI SEND EMAIL PROPOSAL RESMI
+  const handlePackageEmail = (jenisPaket: string) => {
+    const emailToko = STORE_CONFIG.email || 'dwisulistya22@gmail.com';
+    let subject = '';
+    let body = '';
+
+    if (jenisPaket === 'commercial') {
+      subject = 'Permintaan Proposal Paket Gym Commercial - Surabaya Fitness';
+      body = 'Halo Tim Surabaya Fitness,%0D%0A%0D%0ASaya ingin meminta proposal resmi dan pricelist untuk pembuatan Commercial Fitness Center / Gym.%0D%0A%0D%0AMohon konfirmasi dan pengiriman berkas penawaran ke email ini.%0D%0ATerima kasih.';
+    } else if (jenisPaket === 'outdoor') {
+      subject = 'Permintaan Penawaran Alat Fitness Outdoor - Surabaya Fitness';
+      body = 'Halo Tim Surabaya Fitness,%0D%0A%0D%0ASaya ingin meminta katalog dan proposal penawaran harga untuk Alat Fitness Outdoor (Taman / Perumahan / Instansi).%0D%0A%0D%0AMohon informasi lebih lanjut.%0D%0ATerima kasih.';
+    } else {
+      subject = 'Permintaan Katalog Paket Home Gym Rumahan - Surabaya Fitness';
+      body = 'Halo Tim Surabaya Fitness,%0D%0A%0D%0ASaya ingin meminta katalog penawaran harga Paket Home Gym Rumahan.%0D%0A%0D%0AMohon kirimkan pricelist dan rekomendasi produknya.%0D%0ATerima kasih.';
+    }
+
+    window.location.href = `mailto:${emailToko}?subject=${encodeURIComponent(subject)}&body=${body}`;
   };
 
   return (
@@ -165,7 +188,7 @@ function App() {
         <Testimonials />
         
         {/* ====================================================================== */}
-        {/* SECTION PENAWARAN PAKET GYM COMMERCIAL & HOME GYM (PENGGANTI NEWSLETTER) */}
+        {/* SECTION PENAWARAN PAKET COMMERCIAL, HOME GYM & OUTDOOR FITNESS       */}
         {/* ====================================================================== */}
         <section className="py-20 bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
@@ -175,18 +198,18 @@ function App() {
             </span>
 
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4 leading-tight">
-              PENAWARAN PAKET ALAT GYM & COMMERCIAL
+              PENAWARAN PAKET ALAT GYM & OUTDOOR
             </h2>
             
-            <p className="text-red-100 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-              Ingin buka Commercial Fitness Center, Gym Hotel, Instansi, atau butuh Paket Home Gym Rumahan Lengkap? Dapatkan penawaran harga distributor terbaik dari {STORE_CONFIG.name}.
+            <p className="text-red-100 text-base sm:text-lg mb-12 max-w-3xl mx-auto leading-relaxed">
+              Solusi pembuatan Commercial Fitness Center, Fasilitas Gym Hotel/Kantor, Taman Fitness Outdoor, hingga Paket Home Gym Rumahan. Dapatkan penawaran harga distributor resmi dari {STORE_CONFIG.name}.
             </p>
 
-            {/* DUA KARTU PILIHAN PAKET */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
+            {/* TIGA KARTU PILIHAN PAKET (COMMERCIAL, HOME GYM, OUTDOOR) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto text-left">
               
-              {/* PAKET COMMERCIAL GYM */}
-              <div className="bg-gray-950/80 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
+              {/* 1. PAKET COMMERCIAL GYM */}
+              <div className="bg-gray-950/85 backdrop-blur-md p-7 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
                 <div>
                   <div className="text-3xl mb-3">🏢</div>
                   <h3 className="text-xl font-bold text-white mb-2">Paket Commercial Gym</h3>
@@ -194,16 +217,28 @@ function App() {
                     Khusus Pembuatan Fitness Center, Gym Hotel, Apartment, Kantor & Instansi. Lengkap dengan Garansi Onsite & Teknisi.
                   </p>
                 </div>
-                <button
-                  onClick={() => handlePackageWA('commercial')}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 px-6 rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  📄 Minta Proposal & Price List WA &rarr;
-                </button>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => handlePackageWA('commercial')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Minta Proposal via WA</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePackageEmail('commercial')}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2.5 px-4 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Mail size={15} />
+                    <span>Kirim via Email Resmi</span>
+                  </button>
+                </div>
               </div>
 
-              {/* PAKET HOME GYM RUMAHAN */}
-              <div className="bg-gray-950/80 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
+              {/* 2. PAKET HOME GYM RUMAHAN */}
+              <div className="bg-gray-950/85 backdrop-blur-md p-7 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
                 <div>
                   <div className="text-3xl mb-3">🏋️‍♂️</div>
                   <h3 className="text-xl font-bold text-white mb-2">Paket Home Gym Rumahan</h3>
@@ -211,12 +246,53 @@ function App() {
                     Paket Promo Kombinasi Treadmill, Multi-Gym, Bench & Dumbbell Set untuk latihan pribadi di rumah. Gratis Pasang Surabaya!
                   </p>
                 </div>
-                <button
-                  onClick={() => handlePackageWA('homegym')}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-6 rounded-xl font-bold text-sm transition-all shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  💬 Konsultasi Paket Home Gym WA &rarr;
-                </button>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => handlePackageWA('homegym')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Konsultasi Paket WA</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePackageEmail('homegym')}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2.5 px-4 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Mail size={15} />
+                    <span>Minta Katalog via Email</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. PAKET FITNESS OUTDOOR & TAMAN */}
+              <div className="bg-gray-950/85 backdrop-blur-md p-7 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
+                <div>
+                  <div className="text-3xl mb-3">🌳</div>
+                  <h3 className="text-xl font-bold text-white mb-2">Alat Fitness Outdoor</h3>
+                  <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                    Peralatan Gym Luar Ruangan Anti-Karat untuk Taman Kota, Perumahan, Sekolah, & Fasilitas Umum. Bersertifikat & Tahan Cuaca.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => handlePackageWA('outdoor')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Penawaran Outdoor WA</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePackageEmail('outdoor')}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 py-2.5 px-4 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Mail size={15} />
+                    <span>Minta Proposal Email</span>
+                  </button>
+                </div>
               </div>
 
             </div>
