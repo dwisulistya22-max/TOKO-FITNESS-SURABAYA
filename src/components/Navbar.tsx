@@ -6,13 +6,13 @@ const SANITY_PROJECT_ID = 'qi4rocc0';
 const SANITY_DATASET = 'production';
 const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-interface NavbarProps {
+export interface NavbarProps {
   isAdmin?: boolean;
   logo?: string;
   onLogoChange?: (logo: string) => void;
 }
 
-const Navbar = ({}: NavbarProps) => {
+const Navbar = (_props: NavbarProps) => {
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [imageError, setImageError] = useState<boolean>(false);
   const [phone, setPhone] = useState<string>(STORE_CONFIG.phone);
@@ -37,18 +37,19 @@ const Navbar = ({}: NavbarProps) => {
     fetchStoreData();
   }, []);
 
-  const firstPhone = phone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
+  const safePhone = phone || STORE_CONFIG.phone || '6281235907956';
+  const firstPhone = safePhone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* LOGO PINTAR (TEXT FALLBACK JIKA GAMBAR ERROR) */}
+        {/* LOGO TEKS ELEGAN (100% ANTI-RUSAK) */}
         <a href="#" className="flex items-center gap-3">
           {logoUrl && !imageError ? (
             <img
               src={logoUrl}
-              alt="Logo Toko"
+              alt="Surabaya Fitness"
               className="h-12 w-auto object-contain"
               onError={() => setImageError(true)}
             />
