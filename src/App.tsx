@@ -10,10 +10,15 @@ import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
 
 // LINK SANITY STUDIO ANDA
-const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
+// ... (kode import di atasnya tetap sama)
 
-// 🔑 PASSWORD ADMIN (Bisa diganti di sini)
+// LINK SANITY STUDIO LANGSUNG KE FOLDER EDIT
+const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0/default/structure';
+
+// 🔑 PASSWORD ADMIN
 const ADMIN_PASSWORD = 'admin123'; 
+
+// ... (kode ke bawahnya tetap sama)
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
