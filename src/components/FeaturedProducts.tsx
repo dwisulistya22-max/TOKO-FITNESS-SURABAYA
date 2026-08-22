@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart, X, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// CONFIG LANGSUNG KE PROJECT ANDA
-const PROJECT_ID = 'qi4rocc0';
+// MENYEDOT DATA DARI KEDUA PROJECT ID DENGAN AMAN
+const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 const QUERY = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
   _id, name, price, description, specs, tag, shopeeUrl,
   "image": image.asset->url, "category": category->title
 }`);
-const URL = `https://${PROJECT_ID}.api.sanity.io/v2021-10-21/data/query/${DATASET}?query=${QUERY}`;
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
@@ -19,22 +18,28 @@ const FeaturedProducts = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
-  const fetchNow = () => {
+  const fetchNow = async () => {
     setLoading(true);
-    fetch(URL, { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.result) {
-          setProducts(data.result);
+    let allProducts: any[] = [];
+
+    for (const projId of PROJECT_IDS) {
+      try {
+        const url = `https://${projId}.api.sanity.io/v2021-10-21/data/query/${DATASET}?query=${QUERY}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const data = await res.json();
+        if (data?.result && data.result.length > 0) {
+          allProducts = [...allProducts, ...data.result];
         }
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+      } catch (err) {
+        console.warn(`Proses cek Project ID ${projId}...`);
+      }
+    }
+
+    // Filter duplikat ID jika ada
+    const uniqueProducts = Array.from(new Map(allProducts.map(item => [item['_id'], item])).values());
+    setProducts(uniqueProducts);
+    setLoading(false);
   };
 
   useEffect(() => { fetchNow(); }, []);
@@ -46,7 +51,7 @@ const FeaturedProducts = () => {
         {selectedProduct && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col md:flex-row">
-              <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-10 bg-white/80 p-2 rounded-full hover:bg-red-600 transition-all"><X size={24} /></button>
+              <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-10 bg-white/80 p-2 rounded-full hover:bg-red-600 hover:text-white transition-all"><X size={24} /></button>
               <div className="md:w-1/2 bg-gray-100 flex items-center justify-center">
                 <img src={selectedProduct.image} className="w-full h-full object-cover" />
               </div>
@@ -75,8 +80,8 @@ const FeaturedProducts = () => {
           <div className="text-center py-20"><p className="text-red-600 font-bold animate-pulse text-xl">Sedang mengambil data dari Sanity Studio...</p></div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-             <p className="text-gray-500 text-lg mb-4">Ups! Sanity Studio Anda terdeteksi masih kosong.</p>
-             <p className="text-sm text-gray-400">Pastikan Anda sudah menambah Produk di Sanity dan menekan tombol <b>Publish (Warna Hijau)</b>.</p>
+             <p className="text-gray-500 text-lg mb-4">Ups! Data produk Sanity belum terdeteksi.</p>
+             <p className="text-sm text-gray-400">Pastikan Anda sudah klik <b>Publish (Warna Hijau)</b> pada produk di Sanity Studio.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -103,8 +108,6 @@ const FeaturedProducts = () => {
             ))}
           </div>
         )}
-        
-        {error && <p className="text-center text-red-500 mt-10">Koneksi internet bermasalah atau Project ID Sanity salah.</p>}
       </div>
     </section>
   );
