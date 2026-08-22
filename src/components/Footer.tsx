@@ -16,9 +16,10 @@ const Footer = (props: FooterProps) => {
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [imageError, setImageError] = useState<boolean>(false);
   const [storeData, setStoreData] = useState<any>({
-    phone: '6281332345448, 6281235907956', // URUTAN BARU LANGSUNG AKTIF
+    phone: STORE_CONFIG.phone,
     address: STORE_CONFIG.address,
-    email: STORE_CONFIG.email
+    email: STORE_CONFIG.email,
+    maps: ''
   });
 
   useEffect(() => {
@@ -28,22 +29,21 @@ const Footer = (props: FooterProps) => {
           "logo": logo.asset->url,
           "phone": coalesce(phone, whatsapp, ""),
           "address": coalesce(address, ""),
-          "email": coalesce(email, "")
+          "email": coalesce(email, ""),
+          "maps": coalesce(maps, googleMaps, linkMaps, "")
         }`);
 
         const response = await fetch(`${SANITY_URL}${query}`, { cache: 'no-store' });
         const data = await response.json();
 
-        if (data?.result?.phone) {
-          setStoreData((prev: any) => ({
-            ...prev,
-            phone: data.result.phone,
-            address: data.result.address || prev.address,
-            email: data.result.email || prev.email
-          }));
-        }
-        if (data?.result?.logo) {
-          setLogoUrl(data.result.logo);
+        if (data?.result) {
+          if (data.result.logo) setLogoUrl(data.result.logo);
+          setStoreData({
+            phone: data.result.phone || STORE_CONFIG.phone,
+            address: data.result.address || STORE_CONFIG.address,
+            email: data.result.email || STORE_CONFIG.email,
+            maps: data.result.maps || ''
+          });
         }
       } catch (err) {
         console.error('Error fetching footer data:', err);
@@ -54,13 +54,20 @@ const Footer = (props: FooterProps) => {
   }, []);
 
   const displayLogo = props.logo || logoUrl;
-  const safePhone = storeData?.phone || '6281332345448, 6281235907956';
+  const safePhone = storeData?.phone || STORE_CONFIG.phone || '6281332345448, 6281235907956';
   const phones = safePhone.split(/[/,&\n]/).map((p: string) => p.trim()).filter(Boolean);
+
+  // LINK GOOGLE MAPS OTOMATIS BERDASARKAN ALAMAT
+  const mapsUrl = storeData.maps && storeData.maps.length > 5
+    ? storeData.maps
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeData.address || STORE_CONFIG.address)}`;
 
   return (
     <footer className="bg-gray-900 text-gray-300 pt-16 pb-12 border-t border-gray-800" id="tentang">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+          
+          {/* LOGO & DESKRIPSI */}
           <div>
             <div className="flex items-center gap-3 mb-4">
               {displayLogo && !imageError ? (
@@ -86,6 +93,7 @@ const Footer = (props: FooterProps) => {
             </p>
           </div>
 
+          {/* TAUTAN CEPAT */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Tautan Cepat</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
@@ -95,6 +103,7 @@ const Footer = (props: FooterProps) => {
             </ul>
           </div>
 
+          {/* LAYANAN PELANGGAN */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Layanan Pelanggan</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
@@ -104,15 +113,29 @@ const Footer = (props: FooterProps) => {
             </ul>
           </div>
 
+          {/* HUBUNGI KAMI & ALAMAT GOOGLE MAPS */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Hubungi Kami</h3>
             <ul className="space-y-3 text-sm text-gray-400">
-              <li className="flex items-start gap-3">
-                <MapPin size={18} className="text-red-600 shrink-0 mt-1" />
-                <span>{storeData.address}</span>
+              
+              {/* 📍 ALAMAT DENGAN LINK GOOGLE MAPS LANGSUNG */}
+              <li>
+                <a 
+                  href={mapsUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-start gap-3 text-gray-300 hover:text-red-500 transition-colors group cursor-pointer"
+                  title="Klik untuk membuka lokasi di Google Maps"
+                >
+                  <MapPin size={20} className="text-red-600 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                  <span className="group-hover:underline underline-offset-4">
+                    {storeData.address} <span className="text-xs text-red-500 font-bold block mt-1">📍 Buka di Google Maps &rarr;</span>
+                  </span>
+                </a>
               </li>
 
-              <li className="flex items-start gap-3">
+              {/* 📞 NOMOR TELEPON ADMIN 1 & 2 */}
+              <li className="flex items-start gap-3 pt-1">
                 <Phone size={18} className="text-red-600 shrink-0 mt-1" />
                 <div className="space-y-1">
                   {phones.map((p: string, idx: number) => (
@@ -129,14 +152,17 @@ const Footer = (props: FooterProps) => {
                 </div>
               </li>
 
-              <li className="flex items-center gap-3">
+              {/* ✉️ EMAIL */}
+              <li className="flex items-center gap-3 pt-1">
                 <Mail size={18} className="text-red-600 shrink-0" />
                 <span>{storeData.email}</span>
               </li>
             </ul>
           </div>
+
         </div>
 
+        {/* FOOTER BOTTOM */}
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
           <p>© 2024 TOKO FITNESS SURABAYA. All rights reserved.</p>
           
