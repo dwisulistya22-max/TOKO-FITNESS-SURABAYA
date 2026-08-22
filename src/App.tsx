@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 // 1. ISIKAN PROJECT ID SANITY ANDA DI SINI
 // =======================================================
 // Ganti 's833x1z2' dengan Project ID Sanity Anda jika berbeda
-const SANITY_PROJECT_ID = 's833x1z2'; 
+const SANITY_PROJECT_ID =  '856jrik3'; 
 const SANITY_DATASET = 'production';
 
 // URL API Resmi Sanity (Menggunakan REST API langsung agar bebas error library)
