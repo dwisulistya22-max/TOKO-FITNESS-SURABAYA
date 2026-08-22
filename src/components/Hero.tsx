@@ -3,23 +3,19 @@ import { motion } from 'framer-motion';
 import { ShoppingBag, MessageCircle, ArrowRight } from 'lucide-react';
 import { STORE_CONFIG } from '../data/config';
 
-// =========================================================
-// KONFIGURASI SANITY REST API
-// =========================================================
 const SANITY_PROJECT_ID = 'qi4rocc0';
 const SANITY_DATASET = 'production';
 const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-// Foto Background Default jika di Sanity belum di-upload
 const DEFAULT_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop';
 
-interface HeroProps {
+export interface HeroProps {
   isAdmin?: boolean;
   logo?: string;
   onLogoChange?: (logo: string) => void;
 }
 
-const Hero = ({}: HeroProps) => {
+const Hero = (_props: HeroProps) => {
   const [heroData, setHeroData] = useState<any>({
     title: STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
     subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.',
@@ -27,16 +23,9 @@ const Hero = ({}: HeroProps) => {
     image: DEFAULT_BG
   });
 
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // -----------------------------------------------------
-  // AMBIL DATA BANNER / SLIDER DARI SANITY STUDIO
-  // -----------------------------------------------------
   useEffect(() => {
     const fetchHeroFromSanity = async () => {
       try {
-        setLoading(true);
-        // Query GROQ fleksibel untuk mengambil data Slider / Banner
         const query = encodeURIComponent(`*[_type in ["slider", "banner", "hero"]][0]{
           "title": coalesce(title, heading, name, ""),
           "subtitle": coalesce(subtitle, description, subtext, desc, ""),
@@ -57,16 +46,13 @@ const Hero = ({}: HeroProps) => {
           });
         }
       } catch (err) {
-        console.error('Gagal mengambil banner dari Sanity:', err);
-      } finally {
-        setLoading(false);
+        console.error('Gagal mengambil banner:', err);
       }
     };
 
     fetchHeroFromSanity();
   }, []);
 
-  // Scroll halus ke section produk
   const scrollToProducts = () => {
     const el = document.getElementById('products');
     if (el) {
@@ -74,11 +60,10 @@ const Hero = ({}: HeroProps) => {
     }
   };
 
-  const waNumber = STORE_CONFIG.phone || '6281332345448';
+  const waNumber = STORE_CONFIG.phone ? STORE_CONFIG.phone.split(/[/,&\n]/)[0].replace(/\D/g, '') : '6281235907956';
 
   return (
     <section className="relative min-h-[85vh] flex items-center bg-gray-950 overflow-hidden pt-20 pb-16">
-      {/* GAMBAR BACKGROUND DENGAN OVERLAY GELAP ELEGAN */}
       <div className="absolute inset-0 z-0">
         <img
           src={heroData.image}
@@ -91,8 +76,6 @@ const Hero = ({}: HeroProps) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
         <div className="max-w-3xl">
-          
-          {/* BADGE PROMO MERAH */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -103,7 +86,6 @@ const Hero = ({}: HeroProps) => {
             {heroData.tag}
           </motion.div>
 
-          {/* JUDUL UTAMA BANNER */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -117,7 +99,6 @@ const Hero = ({}: HeroProps) => {
             ))}
           </motion.h1>
 
-          {/* SUB-JUDUL / DESKRIPSI */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -127,7 +108,6 @@ const Hero = ({}: HeroProps) => {
             {heroData.subtitle}
           </motion.p>
 
-          {/* TOMBOL AKSI LENGKAP */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -153,7 +133,6 @@ const Hero = ({}: HeroProps) => {
               <span>Konsultasi WA Gratis</span>
             </a>
           </motion.div>
-
         </div>
       </div>
     </section>
