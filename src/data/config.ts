@@ -24,18 +24,26 @@ export default {
       title: 'Nomor Telepon / WhatsApp',
       type: 'string',
     },
-    // 🧡 KITA TAMBAHKAN KOLOM SHOPEE DI SINI
+    // ==========================================
+    // 🧡 ISIAN SHOPEE & TOKOPEDIA LENGKAP
+    // ==========================================
     {
       name: 'shopee',
       title: 'Link Shopee Official Store',
-      type: 'url',
-      description: 'Masukkan link toko Shopee Anda (Contoh: https://shopee.co.id/tokofitnesssurabaya)',
+      type: 'string',
+      description: 'Contoh: https://shopee.co.id/tokofitnesssurabaya',
     },
     {
       name: 'tokopedia',
-      title: 'Link Tokopedia',
-      type: 'url',
-      description: 'Masukkan link toko Tokopedia Anda',
+      title: 'Link Tokopedia Store',
+      type: 'string',
+      description: 'Contoh: https://tokopedia.com/tokofitnesssurabaya',
+    },
+    // ==========================================
+    {
+      name: 'facebook',
+      title: 'Facebook',
+      type: 'string',
     },
     {
       name: 'tiktok',
