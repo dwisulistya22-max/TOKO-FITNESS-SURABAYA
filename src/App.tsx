@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
 // =======================================================
-// 1. ISIKAN PROJECT ID SANITY ANDA DI SINI
+// 1. KONFIGURASI SANITY LANGSUNG DENGAN PROJECT ID ANDA
 // =======================================================
-// Ganti 's833x1z2' dengan Project ID Sanity Anda jika berbeda
-const SANITY_PROJECT_ID =  '856jrik3'; 
+const SANITY_PROJECT_ID = '856jrik3'; // Project ID milik Anda
 const SANITY_DATASET = 'production';
 
-// URL API Resmi Sanity (Menggunakan REST API langsung agar bebas error library)
+// URL API Resmi Sanity (Aman dari crash build Vercel)
 const BASE_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
 export default function App() {
@@ -20,23 +19,23 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // -----------------------------------------------------
-  // FUNGSI FETCH DATA DENGAN NATIVE FETCH (ANTI-CRASH)
+  // FUNGSI MENGAMBIL DATA DARI SANITY (856jrik3)
   // -----------------------------------------------------
   const fetchAllData = async () => {
     try {
       setLoading(true);
       setErrorMessage(null);
 
-      // Query GROQ Sanity
-      const storeQuery = encodeURIComponent(`*[_type == "storeInfo" || _type == "settings"][0]{ name, description, "logoUrl": logo.asset->url }`);
+      // Query GROQ Sanity untuk mengambil Info Toko, Kategori, dan Produk + URL Gambar
+      const storeQuery = encodeURIComponent(`*[_type == "storeInfo" || _type == "settings" || _type == "siteSettings"][0]{ name, description, whatsapp, "logoUrl": logo.asset->url }`);
       const categoryQuery = encodeURIComponent(`*[_type == "category"] | order(title asc) { _id, title, icon }`);
       const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) { _id, name, price, description, "imageUrl": image.asset->url, category->{ _id, title } }`);
 
       // Tarik Data Bersamaan
       const [resStore, resCat, resProd] = await Promise.all([
-        fetch(`${BASE_URL}${storeQuery}`),
-        fetch(`${BASE_URL}${categoryQuery}`),
-        fetch(`${BASE_URL}${productQuery}`),
+        fetch(`${BASE_URL}${storeQuery}`, { cache: 'no-store' }),
+        fetch(`${BASE_URL}${categoryQuery}`, { cache: 'no-store' }),
+        fetch(`${BASE_URL}${productQuery}`, { cache: 'no-store' }),
       ]);
 
       const dataStore = await resStore.json();
@@ -49,7 +48,7 @@ export default function App() {
 
     } catch (err: any) {
       console.error('Error Fetching Data:', err);
-      setErrorMessage('Gagal memuat data dari Sanity. Pastikan Project ID sudah benar.');
+      setErrorMessage('Gagal terhubung ke Sanity Studio. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +58,7 @@ export default function App() {
     fetchAllData();
   }, []);
 
-  // Filter Produk berdasarkan Kategori
+  // Filter Produk berdasarkan Kategori yang dipilih
   const filteredProducts = selectedCategory === 'all'
     ? products
     : products.filter((p) => p.category?._id === selectedCategory);
@@ -67,9 +66,9 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif', padding: '20px' }}>
       
-      {/* BAR ATAS: REFRESH & ADMIN */}
+      {/* BAR ATAS: REFRESH & KONEKSI STUDIO */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', paddingBottom: '16px', borderBottom: '1px solid #334155' }}>
-        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#38bdf8' }}>
+        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
           🏋️‍♂️ Surabaya Fitness
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -87,8 +86,10 @@ export default function App() {
           >
             🔄 Refresh Data
           </button>
+          
+          {/* Tombol Admin Sanity Studio Anda */}
           <a
-            href={`https://${SANITY_PROJECT_ID}.sanity.studio`}
+            href="https://856jrik3.sanity.studio"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -100,38 +101,43 @@ export default function App() {
               fontWeight: 600
             }}
           >
-            🔐 Sanity Studio
+            🔐 Admin Studio
           </a>
         </div>
       </div>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         
-        {/* HEADER / INFO TOKO */}
+        {/* HEADER / LOGO TOKO */}
         <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-          {storeInfo?.logoUrl && (
+          {storeInfo?.logoUrl ? (
             <img
               src={storeInfo.logoUrl}
               alt="Logo Toko"
-              style={{ width: '90px', height: '90px', objectFit: 'contain', borderRadius: '50%', marginBottom: '16px', border: '2px solid #38bdf8', padding: '4px' }}
+              style={{ width: '100px', height: '100px', objectFit: 'contain', borderRadius: '50%', marginBottom: '16px', border: '3px solid #38bdf8', padding: '4px', backgroundColor: '#1e293b' }}
             />
+          ) : (
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', border: '2px dashed #475569', fontSize: '2rem' }}>
+              🏋️
+            </div>
           )}
+          
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 10px 0', color: '#ffffff' }}>
-            {storeInfo?.name || 'Surabaya Fitness - Toko Alat Fitness'}
+            {storeInfo?.name || 'Surabaya Fitness'}
           </h1>
           <p style={{ fontSize: '1.1rem', color: '#94a3b8', margin: 0, maxWidth: '600px', marginInline: 'auto' }}>
-            {storeInfo?.description || 'Kualitas Gym Profesional di Rumah Anda'}
+            {storeInfo?.description || 'Katalog Alat Fitness Terbaik & Terlengkap di Surabaya'}
           </p>
         </header>
 
-        {/* ERRROR / WARNING NOTIFICATION */}
+        {/* NOTIFIKASI ERROR JIKA ADA */}
         {errorMessage && (
           <div style={{ backgroundColor: '#450a0a', border: '1px solid #ef4444', color: '#fca5a5', padding: '16px', borderRadius: '12px', marginBottom: '30px', textAlign: 'center' }}>
             ⚠️ {errorMessage}
           </div>
         )}
 
-        {/* KATEGORI */}
+        {/* DAFTAR KATEGORI */}
         <section style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
             <button
@@ -150,7 +156,7 @@ export default function App() {
               🔥 Semua Produk
             </button>
 
-            {categories.map((cat) => (
+            {categories.length > 0 && categories.map((cat) => (
               <button
                 key={cat._id}
                 onClick={() => setSelectedCategory(cat._id)}
@@ -176,7 +182,7 @@ export default function App() {
         <section>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: '#38bdf8', fontSize: '1.2rem' }}>
-              ⏳ Memuat data produk terbaru...
+              ⏳ Memuat data produk dari Sanity...
             </div>
           ) : filteredProducts.length > 0 ? (
             <div style={{
@@ -214,7 +220,7 @@ export default function App() {
                         {item.name}
                       </h3>
                       <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: '0 0 16px 0', lineHeight: '1.4' }}>
-                        {item.description || 'Alat fitness berkualitas tinggi untuk penggunaan personal atau komersial.'}
+                        {item.description || 'Peralatan fitness berkualitas tinggi.'}
                       </p>
                     </div>
                     <div style={{ borderTop: '1px solid #334155', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -228,7 +234,7 @@ export default function App() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b', backgroundColor: '#1e293b', borderRadius: '16px', border: '1px dashed #334155' }}>
-              Belum ada produk di kategori ini.
+              Belum ada produk untuk kategori ini. Masukkan produk di Sanity Studio!
             </div>
           )}
         </section>
