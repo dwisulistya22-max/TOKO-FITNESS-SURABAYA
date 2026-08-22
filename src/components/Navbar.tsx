@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone } from 'lucide-react';
+import { Search, ShoppingCart, Phone } from 'lucide-react';
 import { STORE_CONFIG } from '../data/config';
 
 const SANITY_PROJECT_ID = 'qi4rocc0';
@@ -14,7 +14,6 @@ export interface NavbarProps {
 
 const Navbar = (props: NavbarProps) => {
   const [logoUrl, setLogoUrl] = useState<string>('');
-  const [imageError, setImageError] = useState<boolean>(false);
   const [phone, setPhone] = useState<string>(STORE_CONFIG.phone);
 
   useEffect(() => {
@@ -41,47 +40,68 @@ const Navbar = (props: NavbarProps) => {
   const safePhone = phone || STORE_CONFIG.phone || '6281235907956';
   const firstPhone = safePhone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
 
+  const scrollToProducts = () => {
+    const el = document.getElementById('products');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        <a href="#beranda" className="flex items-center gap-3">
-          {displayLogo && !imageError ? (
+        
+        {/* LOGO FS GRAPHIC KOTAK ELEGAN */}
+        <a href="#beranda" className="flex items-center">
+          {displayLogo ? (
             <img
               src={displayLogo}
               alt="Surabaya Fitness"
-              className="h-12 w-auto object-contain"
-              onError={() => setImageError(true)}
+              className="h-16 w-auto object-contain shadow-sm"
             />
           ) : (
-            <div className="flex items-center gap-2">
-              <div className="bg-red-600 text-white font-black px-3 py-1.5 rounded-xl text-lg tracking-wider shadow-md">
+            <div className="bg-gradient-to-br from-slate-900 via-gray-900 to-black p-2.5 rounded-lg border border-gray-800 shadow-md flex items-center gap-2">
+              <div className="bg-red-600 text-white font-black px-2.5 py-1 rounded text-base tracking-widest">
                 FS
               </div>
-              <div className="font-black text-xl text-gray-900 tracking-tight leading-none">
-                FITNESS <span className="text-red-600 block text-xs tracking-widest mt-0.5">SURABAYA</span>
+              <div className="text-left leading-none">
+                <span className="block font-black text-white text-sm tracking-wider">FITNESS</span>
+                <span className="block text-[10px] font-bold text-red-500 tracking-widest mt-0.5">SURABAYA</span>
               </div>
             </div>
           )}
         </a>
 
-        <div className="hidden md:flex items-center gap-8 font-bold text-sm text-gray-700">
+        {/* MENU NAVIGASI TENGAH */}
+        <div className="hidden md:flex items-center gap-8 font-semibold text-gray-700 text-sm">
           <a href="#beranda" className="hover:text-red-600 transition-colors">Beranda</a>
           <a href="#products" className="hover:text-red-600 transition-colors">Produk</a>
           <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
           <a href="#tentang" className="hover:text-red-600 transition-colors">Tentang Kami</a>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* AKSI KANAN: CARI, TROLI, TOMBOL MERAH HUBUNGI KAMI */}
+        <div className="flex items-center gap-5">
+          <button onClick={scrollToProducts} className="text-gray-600 hover:text-red-600 transition-colors" title="Cari Produk">
+            <Search size={20} />
+          </button>
+
+          <div onClick={scrollToProducts} className="relative cursor-pointer text-gray-600 hover:text-red-600 transition-colors" title="Troli">
+            <ShoppingCart size={22} />
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border border-white">
+              0
+            </span>
+          </div>
+
           <a
-            href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness`}
+            href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness,%20saya%20mau%20bertanya`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-red-600/30 transition-all"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer"
           >
             <Phone size={16} />
             <span>Hubungi Kami</span>
           </a>
         </div>
+
       </div>
     </nav>
   );
