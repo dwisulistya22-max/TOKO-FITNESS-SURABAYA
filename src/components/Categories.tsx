@@ -1,36 +1,35 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-// Konfigurasi Sanity API
-const SANITY_PROJECT_ID = '856jrik3';
+// OTOMATIS MEMERIKSA PROJECT ID DARI SANITY STUDIO ANDA (qi4rocc0 / 856jrik3)
+const PROJECT_IDS = ['qi4rocc0', '856jrik3']; 
 const SANITY_DATASET = 'production';
-const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-// Data Cadangan jika Sanity belum diisi
+// Data Cadangan jika internet lambat
 const DEFAULT_CATEGORIES = [
   {
     id: 'cardio',
     title: 'Cardio',
-    description: 'Treadmill, Sepeda Statis, Elliptical',
+    description: 'Koleksi peralatan fitness kardio (treadmill, sepeda statis, elliptical)',
     image: 'https://images.unsplash.com/photo-1576678927484-cc909957088c?q=80&w=800&auto=format&fit=crop'
-  },
-  {
-    id: 'strength',
-    title: 'Strength',
-    description: 'Dumbbell, Barbell, Weight Plates',
-    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=800&auto=format&fit=crop'
-  },
-  {
-    id: 'homegym',
-    title: 'Home Gym',
-    description: 'Multi-gym, Smith Machine, Bench Press',
-    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=800&auto=format&fit=crop'
   },
   {
     id: 'aksesoris',
     title: 'Aksesoris',
-    description: 'Yoga Mat, Resistance Band, Roller',
+    description: 'Maksimalkan setiap sesi latihanmu di rumah',
     image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'homegym',
+    title: 'Home Gym',
+    description: 'Bawa atmosfer gym profesional ke dalam rumah',
+    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'strength',
+    title: 'Strength',
+    description: 'Koleksi alat penunjang latihan kekuatan beban',
+    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=800&auto=format&fit=crop'
   }
 ];
 
@@ -43,39 +42,51 @@ const Categories = ({ onSelectCategory }: CategoriesProps) => {
   const [categories, setCategories] = useState<any[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // -----------------------------------------------------------
-  // AMBIL GAMBAR & DATA KATEGORI DARI SANITY STUDIO
-  // -----------------------------------------------------------
   useEffect(() => {
     const fetchCategoriesFromSanity = async () => {
-      try {
-        setLoading(true);
-        // Query GROQ Sanity untuk mengambil Judul, Deskripsi & URL Gambar Kategori
-        const query = encodeURIComponent(`*[_type == "category"] | order(title asc) {
-          _id,
-          title,
-          description,
-          "image": image.asset->url
-        }`);
+      setLoading(true);
 
-        const response = await fetch(`${SANITY_URL}${query}`, { cache: 'no-store' });
-        const data = await response.json();
+      // Query GROQ PINTAR: Membaca otomatis judul, deskripsi & gambar apapun nama kolomnya di Sanity
+      const query = encodeURIComponent(`*[_type == "category"] | order(_createdAt asc) {
+        _id,
+        "title": coalesce(title, name, categoryName, label, "Kategori"),
+        "description": coalesce(description, desc, detail, "Peralatan fitness berkualitas"),
+        "image": coalesce(image.asset->url, photo.asset->url, thumbnail.asset->url, icon.asset->url, icon, "")
+      }`);
 
-        if (data?.result && data.result.length > 0) {
-          const formatted = data.result.map((cat: any, index: number) => ({
-            id: cat._id || index,
-            title: cat.title || 'Kategori',
-            description: cat.description || 'Peralatan fitness berkualitas',
-            // Gunakan gambar dari Sanity, jika kosong gunakan default
-            image: cat.image || DEFAULT_CATEGORIES[index % DEFAULT_CATEGORIES.length]?.image
-          }));
-          setCategories(formatted);
+      let foundData = false;
+
+      // Coba panggil dari Project ID Sanity Anda
+      for (const projId of PROJECT_IDS) {
+        try {
+          const url = `https://${projId}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=${query}`;
+          const response = await fetch(url, { cache: 'no-store' });
+          const data = await response.json();
+
+          if (data?.result && data.result.length > 0) {
+            console.log("Data Kategori Berhasil Diambil dari Sanity:", data.result);
+            
+            const formatted = data.result.map((cat: any, index: number) => ({
+              id: cat._id || index,
+              title: cat.title,
+              description: cat.description,
+              image: cat.image && cat.image.length > 5 ? cat.image : DEFAULT_CATEGORIES[index % DEFAULT_CATEGORIES.length]?.image
+            }));
+
+            setCategories(formatted);
+            foundData = true;
+            break; // Hentikan pencarian jika data sudah ketemu
+          }
+        } catch (err) {
+          console.warn(`Mencari data dari Project ID: ${projId}...`);
         }
-      } catch (err) {
-        console.error('Gagal mengambil gambar kategori Sanity:', err);
-      } finally {
-        setLoading(false);
       }
+
+      if (!foundData) {
+        console.log("Menggunakan data default.");
+      }
+
+      setLoading(false);
     };
 
     fetchCategoriesFromSanity();
@@ -98,7 +109,7 @@ const Categories = ({ onSelectCategory }: CategoriesProps) => {
         {/* LIST KATEGORI */}
         {loading ? (
           <div className="text-center py-10 text-red-600 font-bold animate-pulse">
-            ⏳ Memuat Gambar Kategori Terbaru dari Sanity...
+            ⏳ Memuat Kategori Terbaru dari Sanity Studio...
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -111,13 +122,12 @@ const Categories = ({ onSelectCategory }: CategoriesProps) => {
                 viewport={{ once: true }}
                 onClick={() => {
                   onSelectCategory(cat.title);
-                  // Otomatis scroll ke daftar produk saat kategori diklik
                   const el = document.getElementById('products');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="group relative h-96 rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500"
               >
-                {/* GAMBAR DARI SANITY */}
+                {/* GAMBAR DARI SANITY STUDIO */}
                 <img
                   src={cat.image}
                   alt={cat.title}
