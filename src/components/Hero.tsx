@@ -15,7 +15,7 @@ export interface HeroProps {
   onLogoChange?: (logo: string) => void;
 }
 
-const Hero = (_props: HeroProps) => {
+const Hero = (props: HeroProps) => {
   const [heroData, setHeroData] = useState<any>({
     title: STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
     subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.',
@@ -61,12 +61,13 @@ const Hero = (_props: HeroProps) => {
   };
 
   const waNumber = STORE_CONFIG.phone ? STORE_CONFIG.phone.split(/[/,&\n]/)[0].replace(/\D/g, '') : '6281235907956';
+  const bgImage = props.logo && props.logo.length > 5 ? heroData.image : heroData.image;
 
   return (
-    <section className="relative min-h-[85vh] flex items-center bg-gray-950 overflow-hidden pt-20 pb-16">
+    <section className="relative min-h-[85vh] flex items-center bg-gray-950 overflow-hidden pt-20 pb-16" id="beranda">
       <div className="absolute inset-0 z-0">
         <img
-          src={heroData.image}
+          src={bgImage}
           alt="Banner Surabaya Fitness"
           className="w-full h-full object-cover object-center opacity-40 transition-all duration-700"
         />
