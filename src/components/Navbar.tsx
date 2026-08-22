@@ -12,7 +12,7 @@ export interface NavbarProps {
   onLogoChange?: (logo: string) => void;
 }
 
-const Navbar = (_props: NavbarProps) => {
+const Navbar = (props: NavbarProps) => {
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [imageError, setImageError] = useState<boolean>(false);
   const [phone, setPhone] = useState<string>(STORE_CONFIG.phone);
@@ -37,18 +37,17 @@ const Navbar = (_props: NavbarProps) => {
     fetchStoreData();
   }, []);
 
+  const displayLogo = props.logo || logoUrl;
   const safePhone = phone || STORE_CONFIG.phone || '6281235907956';
   const firstPhone = safePhone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        
-        {/* LOGO TEKS ELEGAN (ANTI-RUSAK) */}
         <a href="#" className="flex items-center gap-3">
-          {logoUrl && !imageError ? (
+          {displayLogo && !imageError ? (
             <img
-              src={logoUrl}
+              src={displayLogo}
               alt="Surabaya Fitness"
               className="h-12 w-auto object-contain"
               onError={() => setImageError(true)}
@@ -65,7 +64,6 @@ const Navbar = (_props: NavbarProps) => {
           )}
         </a>
 
-        {/* NAV LINKS */}
         <div className="hidden md:flex items-center gap-8 font-bold text-sm text-gray-700">
           <a href="#beranda" className="hover:text-red-600 transition-colors">Beranda</a>
           <a href="#products" className="hover:text-red-600 transition-colors">Produk</a>
@@ -73,7 +71,6 @@ const Navbar = (_props: NavbarProps) => {
           <a href="#tentang" className="hover:text-red-600 transition-colors">Tentang Kami</a>
         </div>
 
-        {/* TOMBOL CALL WA */}
         <div className="flex items-center gap-4">
           <a
             href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness`}
@@ -85,7 +82,6 @@ const Navbar = (_props: NavbarProps) => {
             <span>Hubungi Kami</span>
           </a>
         </div>
-
       </div>
     </nav>
   );
