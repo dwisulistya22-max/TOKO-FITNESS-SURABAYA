@@ -91,17 +91,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 relative">
-      
-      {/* TOMBOL ADMIN PANEL DI KIRI BAWAH */}
-      <button 
-        onClick={() => setShowAdminModal(true)}
-        className="fixed bottom-6 left-6 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-full font-bold shadow-2xl z-50 flex items-center gap-2 border-2 border-slate-700 transition-all hover:scale-105 cursor-pointer"
-        title="Masuk ke Panel Sanity Studio"
-      >
-        🔐 <span>Admin Panel</span>
-      </button>
 
-      {/* MODAL POP-UP PASSWORD ADMIN */}
+      {/* MODAL POP-UP PASSWORD ADMIN (MUNCUL DARI KLIK SUPER ADMIN LOGIN DI FOOTER) */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-gray-100">
@@ -187,9 +178,7 @@ function App() {
         <WhyChooseUs />
         <Testimonials />
         
-        {/* ====================================================================== */}
-        {/* SECTION PENAWARAN PAKET COMMERCIAL, HOME GYM & OUTDOOR FITNESS       */}
-        {/* ====================================================================== */}
+        {/* SECTION PENAWARAN PAKET COMMERCIAL, HOME GYM & OUTDOOR FITNESS */}
         <section className="py-20 bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             
@@ -205,7 +194,6 @@ function App() {
               Solusi pembuatan Commercial Fitness Center, Fasilitas Gym Hotel/Kantor, Taman Fitness Outdoor, hingga Paket Home Gym Rumahan. Dapatkan penawaran harga distributor resmi dari {STORE_CONFIG.name}.
             </p>
 
-            {/* TIGA KARTU PILIHAN PAKET (COMMERCIAL, HOME GYM, OUTDOOR) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto text-left">
               
               {/* 1. PAKET COMMERCIAL GYM */}
