@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
 const SANITY_PROJECT_ID = 'qi4rocc0';
 const SANITY_DATASET = 'production';
 const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-// BACKGROUND GYM GELAP DENGAN ATMOSFER LAMPU RED NEON GAGAH
-const DARK_GYM_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop';
+// Background gym gelap + lampu merah (gagah seperti foto Anda)
+const DEFAULT_BG =
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
 
 export interface HeroProps {
   isAdmin?: boolean;
@@ -16,112 +16,119 @@ export interface HeroProps {
 }
 
 const Hero = (props: HeroProps) => {
-  const [heroData, setHeroData] = useState<any>({
+  const [heroData, setHeroData] = useState({
     title: STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
-    subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
+    subtitle:
+      STORE_CONFIG.hero?.subtitle ||
+      'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
     tag: STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
-    image: DARK_GYM_BG
+    image: DEFAULT_BG,
+    poster: props.logo || '',
   });
 
   useEffect(() => {
-    const fetchHeroFromSanity = async () => {
+    const fetchAll = async () => {
       try {
-        const query = encodeURIComponent(`*[_type in ["slider", "banner", "hero"]][0]{
+        // Banner + logo toko
+        const bannerQuery = encodeURIComponent(`*[_type in ["slider", "banner", "hero"]][0]{
           "title": coalesce(title, heading, name, ""),
           "subtitle": coalesce(subtitle, description, subtext, desc, ""),
           "tag": coalesce(tag, badge, promo, label, ""),
           "image": coalesce(image.asset->url, photo.asset->url, bgImage.asset->url, "")
         }`);
+        const storeQuery = encodeURIComponent(`*[_type in ["storeConfig", "storeInfo", "settings"]][0]{
+          "logo": logo.asset->url
+        }`);
 
-        const response = await fetch(`${SANITY_URL}${query}`, { cache: 'no-store' });
-        const data = await response.json();
+        const [bannerRes, storeRes] = await Promise.all([
+          fetch(`${SANITY_URL}${bannerQuery}`, { cache: 'no-store' }),
+          fetch(`${SANITY_URL}${storeQuery}`, { cache: 'no-store' }),
+        ]);
 
-        if (data?.result) {
-          const res = data.result;
-          setHeroData({
-            title: res.title || STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
-            subtitle: res.subtitle || STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
-            tag: res.tag || STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
-            image: (res.image && res.image.length > 5) ? res.image : DARK_GYM_BG
-          });
-        }
+        const bannerJson = await bannerRes.json();
+        const storeJson = await storeRes.json();
+
+        const b = bannerJson?.result || {};
+        const s = storeJson?.result || {};
+
+        setHeroData({
+          title: b.title || STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
+          subtitle:
+            b.subtitle ||
+            STORE_CONFIG.hero?.subtitle ||
+            'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
+          tag: b.tag || STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
+          image: b.image && b.image.length > 5 ? b.image : DEFAULT_BG,
+          poster: props.logo || s.logo || '',
+        });
       } catch (err) {
-        console.error('Gagal mengambil banner:', err);
+        console.error(err);
       }
     };
 
-    fetchHeroFromSanity();
-  }, []);
-
-  const displayLogo = props.logo;
+    fetchAll();
+  }, [props.logo]);
 
   return (
-    <section className="relative min-h-[88vh] bg-black text-white flex items-center overflow-hidden py-14" id="beranda">
-      
-      {/* ATMOSFER GYM GELAP DENGAN KONTRAS GAGAH */}
+    <section
+      id="beranda"
+      className="relative min-h-[78vh] md:min-h-[86vh] bg-black text-white overflow-hidden flex items-end"
+    >
+      {/* BACKGROUND GYM GELAP GAGAH */}
       <div className="absolute inset-0 z-0">
         <img
           src={heroData.image}
-          alt="Gym Atmosphere"
-          className="w-full h-full object-cover object-center opacity-45 mix-blend-luminosity"
+          alt="Gym Professional"
+          className="w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/40 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/70 z-10" />
+        {/* Gelap kiri biar teks & logo kebaca, kanan tetap kelihatan mesin gym */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/40" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 pt-24 md:pb-14 md:pt-28">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-end">
           
-          {/* KARTU LOGO FS POSTER DI SEBELAH KIRI (PERSIS FOTO PERTAMA) */}
-          <div className="lg:col-span-5 flex justify-center lg:justify-start">
-            <div className="relative rounded-2xl overflow-hidden border-2 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-slate-900 max-w-[360px] w-full group">
-              {displayLogo ? (
-                <img src={displayLogo} alt="FS Fitness Surabaya" className="w-full h-auto object-cover" />
+          {/* KARTU LOGO FS BESAR KIRI (seperti foto) */}
+          <div className="lg:col-span-5">
+            <div className="w-full max-w-[420px] rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-[1px]">
+              {heroData.poster ? (
+                <img
+                  src={heroData.poster}
+                  alt="FS Fitness Surabaya"
+                  className="w-full h-auto object-cover block"
+                />
               ) : (
-                <div className="p-8 text-center bg-gradient-to-b from-slate-900 via-gray-900 to-black flex flex-col items-center justify-center min-h-[380px] border border-slate-800">
-                  <div className="bg-red-600 text-white font-black text-6xl px-6 py-3 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.5)] mb-4 border border-red-500">
-                    FS
+                <div className="aspect-square flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-black p-8 text-center">
+                  <div className="text-6xl font-black text-cyan-300 tracking-wider mb-2">FS</div>
+                  <div className="text-2xl font-black text-white tracking-wide">FITNESS</div>
+                  <div className="text-2xl font-black text-blue-200 tracking-wide">SURABAYA</div>
+                  <div className="text-[11px] mt-3 tracking-[0.2em] text-cyan-400 font-bold">
+                    FITNESS EQUIPMENT & ACCESSORIES
                   </div>
-                  <h3 className="text-2xl font-black text-white tracking-wider">FITNESS SURABAYA</h3>
-                  <p className="text-xs text-cyan-400 font-bold tracking-widest uppercase mt-2">FITNESS EQUIPMENT & ACCESSORIES</p>
                 </div>
               )}
             </div>
+
+            {/* BADGE MERAH DI BAWAH KARTU LOGO */}
+            <div className="mt-5">
+              <span className="inline-block bg-red-600 text-white text-xs sm:text-sm font-extrabold tracking-wide px-5 py-2.5 rounded-full shadow-lg shadow-red-600/40 uppercase">
+                {heroData.tag}
+              </span>
+            </div>
           </div>
 
-          {/* TEKS PROMO MERAH & JUDUL UTAMA BESAR DI KANAN */}
-          <div className="lg:col-span-7 space-y-6 text-left">
-            
-            {/* BADGE MERAH NEON */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-block bg-red-600 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-full uppercase tracking-wider shadow-[0_0_25px_rgba(220,38,38,0.6)]"
-            >
-              {heroData.tag}
-            </motion.div>
-
-            {/* TEKS JUDUL RAKSASA GAGAH PUTIH */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.02] uppercase tracking-tight"
-            >
+          {/* JUDUL BESAR KANAN/BAWAH */}
+          <div className="lg:col-span-7 lg:pb-2">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase leading-[0.95] tracking-tight text-white drop-shadow-xl">
               {heroData.title}
-            </motion.h1>
-
-            {/* SUB-JUDUL DESKRIPSI */}
-            <p className="text-gray-300 text-base sm:text-xl font-normal leading-relaxed max-w-xl">
+            </h1>
+            <p className="mt-5 max-w-2xl text-gray-200 text-base sm:text-lg leading-relaxed">
               {heroData.subtitle}
             </p>
-
           </div>
-
         </div>
       </div>
-
     </section>
   );
 };
