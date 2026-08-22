@@ -3,6 +3,7 @@ export const STORE_CONFIG = {
   logo: "",
   slogan: "Kualitas Gym Profesional Di Rumah Anda",
   phone: "6281235907956, 6281332345448",
+  phone2: "6281332345448",
   email: "dwisulistya22@gmail.com",
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
   shopee: "https://shopee.co.id/search?keyword=toko%20fitness%20surabaya",
@@ -20,4 +21,4 @@ export const CATEGORIES = [
   { id: 'aksesoris', name: 'Aksesoris' }
 ];
 
-export const PRODUCTS = [];
+export const PRODUCTS: any[] = [];
