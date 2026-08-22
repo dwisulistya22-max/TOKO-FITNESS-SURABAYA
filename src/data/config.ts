@@ -1,12 +1,8 @@
 export const STORE_CONFIG = {
   name: "TOKO FITNESS SURABAYA",
-  logo: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
+  logo: "", // Dikosongkan agar otomatis menggunakan Logo Teks Elegan Anti-Rusak
   slogan: "Kualitas Gym Profesional Di Rumah Anda",
-  
-  // 📞 DUA NOMOR ADMIN WHATSAPP
-  phone: "6281332345448",     // Admin 1
-  phone2: "6281234567890",    // Admin 2 (Ganti dengan nomor ke-2 Anda)
-
+  phone: "6281235907956, 6281332345448", // 📞 DUA NOMOR WA PERMANEN
   email: "dwisulistya22@gmail.com",
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
   shopee: "https://shopee.co.id/search?keyword=toko%20fitness%20surabaya", 
