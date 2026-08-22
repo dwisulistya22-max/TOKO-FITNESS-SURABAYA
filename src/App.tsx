@@ -2,22 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@sanity/client';
 
 // =======================================================
-// 1. KONFIGURASI SANITY CLIENT (PERBAIKAN CACHE)
+// 1. DETEKSI PROJECT ID (Mendukung Vite & Create React App)
 // =======================================================
-export const sanityClient = createClient({
-  projectId: process.env.REACT_APP_SANITY_PROJECT_ID || 'PROJ_ID_ANDA', // Pastikan ID ini benar
-  dataset: process.env.REACT_APP_SANITY_DATASET || 'production',
-  useCdn: false, // ⚠️ WAJIB FALSE agar perubahan di Sanity langsung tampil tanpa nunggu cache!
+// ⚠️ GANTI TEKS DI BAWAH DENGAN PROJECT ID SANITY ANDA JIKA PERLU!
+const SANITY_PROJECT_ID = 
+  (typeof process !== 'undefined' && process.env?.REACT_APP_SANITY_PROJECT_ID) ||
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SANITY_PROJECT_ID) ||
+  's833x1z2'; // <-- JIKA ANDA PUNYA PROJECT ID, MASUKKAN DI SINI (Contoh: 's833x1z2')
+
+const SANITY_DATASET = 'production';
+
+// Inisialisasi Sanity Client
+const sanityClient = createClient({
+  projectId: SANITY_PROJECT_ID,
+  dataset: SANITY_DATASET,
+  useCdn: false, // Selalu ambil data terbaru
   apiVersion: '2024-01-01',
 });
 
 // =======================================================
-// 2. TIPE DATA (TYPESCRIPT)
+// 2. TIPE DATA
 // =======================================================
 interface Category {
   _id: string;
   title: string;
-  slug?: { current: string };
   icon?: string;
 }
 
@@ -34,7 +42,6 @@ interface StoreInfo {
   name?: string;
   description?: string;
   logoUrl?: string;
-  whatsapp?: string;
 }
 
 // =======================================================
@@ -47,151 +54,111 @@ export default function App() {
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // ----------------------------------------------------
-  // FUNGSI UNTUK MENGAMBIL SEMUA DATA TERBARU DARI SANITY
-  // ----------------------------------------------------
   const fetchData = async () => {
     try {
       setLoading(true);
+      setErrorMsg(null);
 
-      // 1. Query Info Toko & LOGO (Diambil URL gambarnya secara spesifik)
+      // Query ke Sanity
       const storeQuery = `*[_type == "storeInfo" || _type == "settings"][0]{
-        name,
-        description,
-        whatsapp,
-        "logoUrl": logo.asset->url
+        name, description, "logoUrl": logo.asset->url
       }`;
-
-      // 2. Query Kategori
-      const categoryQuery = `*[_type == "category"] | order(title asc) {
-        _id,
-        title,
-        icon
-      }`;
-
-      // 3. Query Produk & GAMBAR PRODUK (Diambil URL gambarnya secara spesifik)
+      const categoryQuery = `*[_type == "category"] | order(title asc) { _id, title, icon }`;
       const productQuery = `*[_type == "product"] | order(_createdAt desc) {
-        _id,
-        name,
-        price,
-        description,
+        _id, name, price, description,
         "imageUrl": image.asset->url,
         category->{ _id, title }
       }`;
 
-      // Eksekusi semua query secara bersamaan
       const [storeData, catData, prodData] = await Promise.all([
-        sanityClient.fetch(storeQuery),
-        sanityClient.fetch(categoryQuery),
-        sanityClient.fetch(productQuery),
+        sanityClient.fetch(storeQuery).catch(() => null),
+        sanityClient.fetch(categoryQuery).catch(() => []),
+        sanityClient.fetch(productQuery).catch(() => []),
       ]);
 
       if (storeData) setStoreInfo(storeData);
-      if (catData) setCategories(catData);
-      if (prodData) setProducts(prodData);
+      if (Array.isArray(catData)) setCategories(catData);
+      if (Array.isArray(prodData)) setProducts(prodData);
 
-    } catch (error) {
-      console.error('Gagal mengambil data dari Sanity:', error);
+    } catch (err: any) {
+      console.error('Sanity Error:', err);
+      setErrorMsg(err?.message || 'Gagal terhubung ke Sanity Studio.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Jalankan saat pertama kali web dibuka
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Filter produk berdasarkan kategori
   const filteredProducts = selectedCategory === 'all'
     ? products
     : products.filter((p) => p.category?._id === selectedCategory);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Segoe UI, Roboto, sans-serif', color: '#1e293b' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'sans-serif', color: '#1e293b', padding: '20px' }}>
       
-      {/* 🔐 TOMBOL ADMIN & REFRESH (Pojok Kanan Atas) */}
-      <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 1000, display: 'flex', gap: '8px' }}>
+      {/* TOMBOL REFRESH */}
+      <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 1000 }}>
         <button
           onClick={fetchData}
-          title="Klik untuk memuat ulang data terbaru"
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #cbd5e1',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-          }}
-        >
-          🔄 Refresh
-        </button>
-
-        {/* Ganti URL di bawah ini dengan URL Sanity Studio Anda jika sudah di-deploy */}
-        <a
-          href="https://toko-saya.sanity.studio" 
-          target="_blank"
-          rel="noopener noreferrer"
           style={{
             backgroundColor: '#0f172a',
             color: '#ffffff',
-            padding: '8px 14px',
+            border: 'none',
+            padding: '10px 16px',
             borderRadius: '8px',
-            textDecoration: 'none',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '0.85rem'
           }}
         >
-          🔐 Admin Panel
-        </a>
+          🔄 Refresh Web
+        </button>
       </div>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', paddingTop: '20px' }}>
         
-        {/* ================= HEADER & LOGO ================= */}
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+        {/* HEADER / LOGO */}
+        <header style={{ textAlign: 'center', marginBottom: '32px' }}>
           {storeInfo?.logoUrl && (
             <img
               src={storeInfo.logoUrl}
               alt="Logo Toko"
-              style={{
-                width: '90px',
-                height: '90px',
-                objectFit: 'contain',
-                borderRadius: '50%',
-                marginBottom: '16px',
-                backgroundColor: '#ffffff',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                padding: '4px'
-              }}
+              style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '50%', marginBottom: '12px' }}
             />
           )}
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0 0 8px 0', color: '#0f172a' }}>
-            {storeInfo?.name || 'Katalog Toko Online'}
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 8px 0' }}>
+            {storeInfo?.name || 'Surabaya Fitness - Toko Alat Fitness'}
           </h1>
-          <p style={{ fontSize: '1rem', color: '#64748b', margin: 0, maxWidth: '600px', marginInline: 'auto' }}>
-            {storeInfo?.description || 'Selamat datang di katalog produk kami.'}
+          <p style={{ color: '#64748b', margin: 0 }}>
+            {storeInfo?.description || 'Katalog Resmi Alat Fitness Surabaya'}
           </p>
         </header>
 
-        {/* ================= DAFTAR KATEGORI ================= */}
-        <section style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+        {/* NOTIFIKASI JIKA ADA ERROR */}
+        {errorMsg && (
+          <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', padding: '16px', borderRadius: '8px', color: '#991b1b', marginBottom: '24px' }}>
+            <strong>⚠️ Perhatian:</strong> {errorMsg}
+          </div>
+        )}
+
+        {/* KATEGORI */}
+        <section style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
             <button
               onClick={() => setSelectedCategory('all')}
               style={{
-                padding: '10px 20px',
-                borderRadius: '30px',
+                padding: '8px 16px',
+                borderRadius: '20px',
                 border: 'none',
                 cursor: 'pointer',
                 fontWeight: 600,
                 backgroundColor: selectedCategory === 'all' ? '#2563eb' : '#e2e8f0',
                 color: selectedCategory === 'all' ? '#ffffff' : '#475569',
-                transition: '0.2s'
               }}
             >
               Semua
@@ -202,15 +169,14 @@ export default function App() {
                 key={cat._id}
                 onClick={() => setSelectedCategory(cat._id)}
                 style={{
-                  padding: '10px 20px',
-                  borderRadius: '30px',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
                   border: 'none',
                   cursor: 'pointer',
                   fontWeight: 600,
                   whiteSpace: 'nowrap',
                   backgroundColor: selectedCategory === cat._id ? '#2563eb' : '#e2e8f0',
                   color: selectedCategory === cat._id ? '#ffffff' : '#475569',
-                  transition: '0.2s'
                 }}
               >
                 {cat.icon ? `${cat.icon} ` : ''}{cat.title}
@@ -219,66 +185,48 @@ export default function App() {
           </div>
         </section>
 
-        {/* ================= DAFTAR PRODUK ================= */}
+        {/* DAFTAR PRODUK */}
         <section>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '50px 0', color: '#64748b' }}>
-              Memuat data terbaru...
+            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+              Memuat data dari Sanity...
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: '24px'
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {filteredProducts.map((item) => (
                 <div
                   key={item._id}
                   style={{
                     backgroundColor: '#ffffff',
-                    borderRadius: '16px',
+                    borderRadius: '12px',
                     overflow: 'hidden',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-                    border: '1px solid #f1f5f9',
+                    border: '1px solid #e2e8f0',
                     display: 'flex',
                     flexDirection: 'column'
                   }}
                 >
-                  <div style={{ height: '180px', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ height: '160px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>📷 Tidak ada gambar</span>
                     )}
                   </div>
-                  <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase' }}>
-                        {item.category?.title || 'Umum'}
-                      </span>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: '6px 0', color: '#0f172a' }}>
-                        {item.name}
-                      </h3>
-                      <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 12px 0' }}>
-                        {item.description || 'Tidak ada deskripsi'}
-                      </p>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 6px 0' }}>{item.name}</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 8px 0' }}>{item.description || '-'}</p>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#16a34a' }}>
-                        Rp {item.price ? item.price.toLocaleString('id-ID') : '0'}
-                      </span>
+                    <div style={{ fontWeight: 'bold', color: '#16a34a', fontSize: '1rem' }}>
+                      Rp {item.price ? item.price.toLocaleString('id-ID') : '0'}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-              Tidak ada produk pada kategori ini.
+            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+              Belum ada produk untuk ditampilkan.
             </div>
           )}
         </section>
