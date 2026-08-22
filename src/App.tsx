@@ -52,9 +52,24 @@ function App() {
     setIsAuthenticated(false);
   };
 
+  // FUNGSI CHAT WA UNTUK PENAWARAN PAKET GYM
+  const handlePackageWA = (jenisPaket: string) => {
+    const waAdmin = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
+    let message = '';
+
+    if (jenisPaket === 'commercial') {
+      message = `Halo Admin Surabaya Fitness 👋%0A%0ASaya tertarik dengan *PENAWARAN PAKET GYM COMMERCIAL / FITNESS CENTER*.%0AMohon kirimkan katalog paket, proposal, dan penawaran harga terbaik. Terima kasih!`;
+    } else {
+      message = `Halo Admin Surabaya Fitness 👋%0A%0ASaya tertarik dengan *PAKET PROMO HOME GYM / RUMAHAN*.%0AMohon rekomendasi paket alat fitness dan pricelist-nya. Terima kasih!`;
+    }
+
+    window.open(`https://wa.me/${waAdmin}?text=${message}`, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 relative">
       
+      {/* TOMBOL ADMIN PANEL DI KIRI BAWAH */}
       <button 
         onClick={() => setShowAdminModal(true)}
         className="fixed bottom-6 left-6 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-full font-bold shadow-2xl z-50 flex items-center gap-2 border-2 border-slate-700 transition-all hover:scale-105 cursor-pointer"
@@ -63,6 +78,7 @@ function App() {
         🔐 <span>Admin Panel</span>
       </button>
 
+      {/* MODAL POP-UP PASSWORD ADMIN */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-gray-100">
@@ -131,6 +147,7 @@ function App() {
         </div>
       )}
 
+      {/* COMPONENT UTAMA WEBSITE */}
       <Navbar isAdmin={false} logo={logo} onLogoChange={handleLogoChange} />
       
       <main>
@@ -147,22 +164,63 @@ function App() {
         <WhyChooseUs />
         <Testimonials />
         
-        <section className="py-20 bg-red-600">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Dapatkan Update Promo Terbaru</h2>
-            <p className="text-red-100 mb-8 max-w-xl mx-auto">
-              Berlangganan newsletter kami untuk mendapatkan info produk terbaru dan diskon eksklusif {STORE_CONFIG.name}.
+        {/* ====================================================================== */}
+        {/* SECTION PENAWARAN PAKET GYM COMMERCIAL & HOME GYM (PENGGANTI NEWSLETTER) */}
+        {/* ====================================================================== */}
+        <section className="py-20 bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            
+            <span className="bg-black/30 text-white text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full inline-block mb-4 border border-white/20">
+              🔥 SPECIAL BUNDLE & DISTRIBUTOR OFFER
+            </span>
+
+            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4 leading-tight">
+              PENAWARAN PAKET ALAT GYM & COMMERCIAL
+            </h2>
+            
+            <p className="text-red-100 text-base sm:text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
+              Ingin buka Commercial Fitness Center, Gym Hotel, Instansi, atau butuh Paket Home Gym Rumahan Lengkap? Dapatkan penawaran harga distributor terbaik dari {STORE_CONFIG.name}.
             </p>
-            <form className="max-w-md mx-auto flex gap-4" onSubmit={(e) => e.preventDefault()}>
-              <input 
-                type="email" 
-                placeholder="Alamat Email Anda" 
-                className="flex-1 px-6 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400"
-              />
-              <button className="bg-gray-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors">
-                Daftar
-              </button>
-            </form>
+
+            {/* DUA KARTU PILIHAN PAKET */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
+              
+              {/* PAKET COMMERCIAL GYM */}
+              <div className="bg-gray-950/80 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
+                <div>
+                  <div className="text-3xl mb-3">🏢</div>
+                  <h3 className="text-xl font-bold text-white mb-2">Paket Commercial Gym</h3>
+                  <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                    Khusus Pembuatan Fitness Center, Gym Hotel, Apartment, Kantor & Instansi. Lengkap dengan Garansi Onsite & Teknisi.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handlePackageWA('commercial')}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 px-6 rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  📄 Minta Proposal & Price List WA &rarr;
+                </button>
+              </div>
+
+              {/* PAKET HOME GYM RUMAHAN */}
+              <div className="bg-gray-950/80 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col justify-between hover:border-red-500/50 transition-all">
+                <div>
+                  <div className="text-3xl mb-3">🏋️‍♂️</div>
+                  <h3 className="text-xl font-bold text-white mb-2">Paket Home Gym Rumahan</h3>
+                  <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                    Paket Promo Kombinasi Treadmill, Multi-Gym, Bench & Dumbbell Set untuk latihan pribadi di rumah. Gratis Pasang Surabaya!
+                  </p>
+                </div>
+                <button
+                  onClick={() => handlePackageWA('homegym')}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-6 rounded-xl font-bold text-sm transition-all shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  💬 Konsultasi Paket Home Gym WA &rarr;
+                </button>
+              </div>
+
+            </div>
+
           </div>
         </section>
       </main>
