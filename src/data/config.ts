@@ -2,8 +2,8 @@ export const STORE_CONFIG = {
   name: "TOKO FITNESS SURABAYA",
   logo: "",
   slogan: "Kualitas Gym Profesional Di Rumah Anda",
-  // URUTAN BARU: Admin 1 dulu, Admin 2 belakangan (pisah koma, tanpa spasi berlebih)
-  phone: "6281332345448,6281235907956",
+  // URUTAN BARU: 6281332345448 dulu, baru 6281235907956
+  phone: "6281332345448, 6281235907956",
   phone2: "6281235907956",
   email: "dwisulistya22@gmail.com",
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
