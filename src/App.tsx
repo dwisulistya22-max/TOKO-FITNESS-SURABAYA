@@ -10,9 +10,9 @@ import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
 
 // =========================================================
-// LINK SANITY STUDIO YANG BENAR & ANTI ERROR
+// LINK RESMI SANITY STUDIO ANDA (100% PASTI WORK)
 // =========================================================
-const SANITY_STUDIO_URL = 'https://qi4rocc0.sanity.studio';
+const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
 
 // 🔑 PASSWORD ADMIN (Bisa diganti di sini)
 const ADMIN_PASSWORD = 'admin123'; 
