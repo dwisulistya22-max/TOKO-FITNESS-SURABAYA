@@ -44,7 +44,7 @@ const Navbar = (props: NavbarProps) => {
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-3">
+        <a href="#beranda" className="flex items-center gap-3">
           {displayLogo && !imageError ? (
             <img
               src={displayLogo}
