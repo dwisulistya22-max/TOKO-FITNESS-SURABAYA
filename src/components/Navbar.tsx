@@ -14,7 +14,7 @@ export interface NavbarProps {
 
 const Navbar = (props: NavbarProps) => {
   const [logoUrl, setLogoUrl] = useState<string>('');
-  const [phone, setPhone] = useState<string>(STORE_CONFIG.phone);
+  const [phone, setPhone] = useState<string>(STORE_CONFIG.phone || '');
 
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -37,8 +37,9 @@ const Navbar = (props: NavbarProps) => {
   }, []);
 
   const displayLogo = props.logo || logoUrl;
-  const safePhone = phone || STORE_CONFIG.phone || '6281235907956';
-  const firstPhone = safePhone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
+  const firstPhone = (phone || STORE_CONFIG.phone || '6281235907956')
+    .split(/[/,&\n]/)[0]
+    ?.replace(/\D/g, '') || '6281235907956';
 
   const scrollToProducts = () => {
     const el = document.getElementById('products');
@@ -46,62 +47,50 @@ const Navbar = (props: NavbarProps) => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        
-        {/* LOGO FS GRAPHIC KOTAK ELEGAN */}
-        <a href="#beranda" className="flex items-center">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between gap-4">
+        {/* LOGO KOTAK KIRI */}
+        <a href="#beranda" className="flex items-center shrink-0">
           {displayLogo ? (
-            <img
-              src={displayLogo}
-              alt="Surabaya Fitness"
-              className="h-16 w-auto object-contain shadow-sm"
-            />
+            <img src={displayLogo} alt="FS Fitness Surabaya" className="h-14 w-14 object-contain rounded-md shadow-sm" />
           ) : (
-            <div className="bg-gradient-to-br from-slate-900 via-gray-900 to-black p-2.5 rounded-lg border border-gray-800 shadow-md flex items-center gap-2">
-              <div className="bg-red-600 text-white font-black px-2.5 py-1 rounded text-base tracking-widest">
-                FS
-              </div>
-              <div className="text-left leading-none">
-                <span className="block font-black text-white text-sm tracking-wider">FITNESS</span>
-                <span className="block text-[10px] font-bold text-red-500 tracking-widest mt-0.5">SURABAYA</span>
-              </div>
+            <div className="h-14 w-14 bg-black text-white rounded-md flex items-center justify-center font-black text-lg">
+              FS
             </div>
           )}
         </a>
 
-        {/* MENU NAVIGASI TENGAH */}
-        <div className="hidden md:flex items-center gap-8 font-semibold text-gray-700 text-sm">
+        {/* MENU TENGAH */}
+        <div className="hidden md:flex items-center gap-8 font-semibold text-slate-700 text-[15px]">
           <a href="#beranda" className="hover:text-red-600 transition-colors">Beranda</a>
           <a href="#products" className="hover:text-red-600 transition-colors">Produk</a>
           <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
           <a href="#tentang" className="hover:text-red-600 transition-colors">Tentang Kami</a>
         </div>
 
-        {/* AKSI KANAN: CARI, TROLI, TOMBOL MERAH HUBUNGI KAMI */}
-        <div className="flex items-center gap-5">
-          <button onClick={scrollToProducts} className="text-gray-600 hover:text-red-600 transition-colors" title="Cari Produk">
+        {/* KANAN: CARI + TROLI + HUBUNGI KAMI */}
+        <div className="flex items-center gap-4 sm:gap-5">
+          <button onClick={scrollToProducts} className="text-slate-600 hover:text-red-600 transition-colors" aria-label="Cari">
             <Search size={20} />
           </button>
 
-          <div onClick={scrollToProducts} className="relative cursor-pointer text-gray-600 hover:text-red-600 transition-colors" title="Troli">
+          <button onClick={scrollToProducts} className="relative text-slate-600 hover:text-red-600 transition-colors" aria-label="Troli">
             <ShoppingCart size={22} />
-            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border border-white">
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
               0
             </span>
-          </div>
+          </button>
 
           <a
-            href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness,%20saya%20mau%20bertanya`}
+            href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-5 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 shadow-md shadow-red-600/30 transition-all"
           >
             <Phone size={16} />
-            <span>Hubungi Kami</span>
+            <span className="hidden sm:inline">Hubungi Kami</span>
           </a>
         </div>
-
       </div>
     </nav>
   );
