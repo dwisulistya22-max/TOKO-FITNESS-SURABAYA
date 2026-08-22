@@ -51,7 +51,7 @@ const WhatsAppButton = () => {
   return (
     <div className="fixed bottom-6 right-6 z-[999]">
       {isOpen && (
-        <div className="mb-4 bg-white rounded-2xl shadow-2xl p-5 border border-gray-100 w-72 animate-in fade-in duration-300">
+        <div className="mb-4 bg-white rounded-2xl shadow-2xl p-5 border border-gray-100 w-72">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
@@ -66,10 +66,10 @@ const WhatsAppButton = () => {
 
           <div className="space-y-2.5">
             <a
-              href={`https://wa.me/${admin1}?text=Halo%20Admin%201%20Surabaya%20Fitness,%20saya%20mau%20tanya%20produk`}
+              href={`https://wa.me/${admin1}?text=Halo%20Admin%201%20Surabaya%20Fitness`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 p-3 rounded-xl transition-all group"
+              className="flex items-center gap-3 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 p-3 rounded-xl transition-all"
             >
               <div className="bg-green-500 text-white p-2 rounded-lg">
                 <UserCheck size={18} />
@@ -82,10 +82,10 @@ const WhatsAppButton = () => {
 
             {admin2 && (
               <a
-                href={`https://wa.me/${admin2}?text=Halo%20Admin%202%20Surabaya%20Fitness,%20saya%20mau%20tanya%20produk`}
+                href={`https://wa.me/${admin2}?text=Halo%20Admin%202%20Surabaya%20Fitness`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 p-3 rounded-xl transition-all group"
+                className="flex items-center gap-3 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 p-3 rounded-xl transition-all"
               >
                 <div className="bg-green-600 text-white p-2 rounded-lg">
                   <UserCheck size={18} />
