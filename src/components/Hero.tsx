@@ -18,7 +18,7 @@ export interface HeroProps {
 const Hero = (props: HeroProps) => {
   const [heroData, setHeroData] = useState<any>({
     title: STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
-    subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.',
+    subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
     tag: STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
     image: DEFAULT_BG
   });
