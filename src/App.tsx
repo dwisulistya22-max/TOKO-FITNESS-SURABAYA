@@ -9,16 +9,13 @@ import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
 
-// LINK SANITY STUDIO ANDA
-// ... (kode import di atasnya tetap sama)
+// =========================================================
+// LINK SANITY STUDIO YANG BENAR & ANTI ERROR
+// =========================================================
+const SANITY_STUDIO_URL = 'https://qi4rocc0.sanity.studio';
 
-// LINK SANITY STUDIO LANGSUNG KE FOLDER EDIT
-const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0/default/structure';
-
-// 🔑 PASSWORD ADMIN
+// 🔑 PASSWORD ADMIN (Bisa diganti di sini)
 const ADMIN_PASSWORD = 'admin123'; 
-
-// ... (kode ke bawahnya tetap sama)
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
