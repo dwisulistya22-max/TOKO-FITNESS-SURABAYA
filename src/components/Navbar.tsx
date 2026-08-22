@@ -1,86 +1,93 @@
-import { useState } from 'react';
-import { MessageCircle, X, UserCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Phone } from 'lucide-react';
 import { STORE_CONFIG } from '../data/config';
 
-const WhatsAppButton = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const SANITY_PROJECT_ID = 'qi4rocc0';
+const SANITY_DATASET = 'production';
+const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-  const admin1 = STORE_CONFIG.phone || '6281332345448';
-  const admin2 = (STORE_CONFIG as any).phone2 || '6281234567890';
+interface NavbarProps {
+  isAdmin?: boolean;
+  logo?: string;
+  onLogoChange?: (logo: string) => void;
+}
+
+const Navbar = ({}: NavbarProps) => {
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [imageError, setImageError] = useState<boolean>(false);
+  const [phone, setPhone] = useState<string>(STORE_CONFIG.phone);
+
+  useEffect(() => {
+    const fetchStoreData = async () => {
+      try {
+        const query = encodeURIComponent(`*[_type in ["storeConfig", "storeInfo", "settings"]][0]{
+          "logo": logo.asset->url,
+          "phone": coalesce(phone, whatsapp, "")
+        }`);
+        const res = await fetch(`${SANITY_URL}${query}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (data?.result) {
+          if (data.result.logo) setLogoUrl(data.result.logo);
+          if (data.result.phone) setPhone(data.result.phone);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchStoreData();
+  }, []);
+
+  const firstPhone = phone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
 
   return (
-    <div className="fixed bottom-6 right-6 z-[999]">
-      
-      {/* POP-UP PILIHAN ADMIN (MUNCUL SAAT TOMBOL DIKLIK) */}
-      {isOpen && (
-        <div className="mb-4 bg-white rounded-2xl shadow-2xl p-5 border border-gray-100 w-72 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        
+        {/* LOGO PINTAR (TEXT FALLBACK JIKA GAMBAR ERROR) */}
+        <a href="#" className="flex items-center gap-3">
+          {logoUrl && !imageError ? (
+            <img
+              src={logoUrl}
+              alt="Logo Toko"
+              className="h-12 w-auto object-contain"
+              onError={() => setImageError(true)}
+            />
+          ) : (
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-              <span className="font-bold text-gray-900 text-sm">Customer Service WA</span>
+              <div className="bg-red-600 text-white font-black px-3 py-1.5 rounded-xl text-lg tracking-wider shadow-md">
+                FS
+              </div>
+              <div className="font-black text-xl text-gray-900 tracking-tight leading-none">
+                FITNESS <span className="text-red-600 block text-xs tracking-widest mt-0.5">SURABAYA</span>
+              </div>
             </div>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600 rounded-full p-1 transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          )}
+        </a>
 
-          <p className="text-xs text-gray-500 mb-4">
-            Silakan pilih Admin WhatsApp untuk respon cepat:
-          </p>
-
-          <div className="space-y-2.5">
-            {/* TOMBOL ADMIN 1 */}
-            <a
-              href={`https://wa.me/${admin1}?text=Halo%20Admin%201%20Surabaya%20Fitness,%20saya%20mau%20tanya%20produk`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 p-3 rounded-xl transition-all group"
-            >
-              <div className="bg-green-500 text-white p-2 rounded-lg group-hover:scale-110 transition-transform">
-                <UserCheck size={18} />
-              </div>
-              <div>
-                <div className="font-bold text-xs text-gray-900">Admin 1 (Penjualan)</div>
-                <div className="text-[11px] text-green-700">Online • Konsultasi Produk</div>
-              </div>
-            </a>
-
-            {/* TOMBOL ADMIN 2 */}
-            <a
-              href={`https://wa.me/${admin2}?text=Halo%20Admin%202%20Surabaya%20Fitness,%20saya%20mau%20tanya%20produk`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 p-3 rounded-xl transition-all group"
-            >
-              <div className="bg-green-600 text-white p-2 rounded-lg group-hover:scale-110 transition-transform">
-                <UserCheck size={18} />
-              </div>
-              <div>
-                <div className="font-bold text-xs text-gray-900">Admin 2 (Info Stok & Ongkir)</div>
-                <div className="text-[11px] text-green-700">Online • Layanan Cepat</div>
-              </div>
-            </a>
-          </div>
+        {/* NAV LINKS */}
+        <div className="hidden md:flex items-center gap-8 font-bold text-sm text-gray-700">
+          <a href="#beranda" className="hover:text-red-600 transition-colors">Beranda</a>
+          <a href="#products" className="hover:text-red-600 transition-colors">Produk</a>
+          <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
+          <a href="#tentang" className="hover:text-red-600 transition-colors">Tentang Kami</a>
         </div>
-      )}
 
-      {/* TOMBOL HIJAU MELAYANG */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all cursor-pointer relative"
-        title="Hubungi Admin WhatsApp"
-      >
-        <MessageCircle size={30} />
-        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
-          2
-        </span>
-      </button>
+        {/* TOMBOL CALL WA */}
+        <div className="flex items-center gap-4">
+          <a
+            href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-red-600/30 transition-all"
+          >
+            <Phone size={16} />
+            <span>Hubungi Kami</span>
+          </a>
+        </div>
 
-    </div>
+      </div>
+    </nav>
   );
 };
 
-export default WhatsAppButton;
+export default Navbar;
