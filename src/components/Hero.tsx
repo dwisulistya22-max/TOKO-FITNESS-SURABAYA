@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, MessageCircle, ArrowRight } from 'lucide-react';
 import { STORE_CONFIG } from '../data/config';
 
 const SANITY_PROJECT_ID = 'qi4rocc0';
@@ -53,89 +52,74 @@ const Hero = (props: HeroProps) => {
     fetchHeroFromSanity();
   }, []);
 
-  const scrollToProducts = () => {
-    const el = document.getElementById('products');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const waNumber = STORE_CONFIG.phone ? STORE_CONFIG.phone.split(/[/,&\n]/)[0].replace(/\D/g, '') : '6281235907956';
-  const bgImage = props.logo && props.logo.length > 5 ? heroData.image : heroData.image;
+  const displayLogo = props.logo;
 
   return (
-    <section className="relative min-h-[85vh] flex items-center bg-gray-950 overflow-hidden pt-20 pb-16" id="beranda">
+    <section className="relative min-h-[85vh] bg-black text-white flex items-center overflow-hidden py-12" id="beranda">
+      
+      {/* BACKGROUND ATMOSFER GYM GELAP DENGAN LAMPU NEON MERAH */}
       <div className="absolute inset-0 z-0">
         <img
-          src={bgImage}
-          alt="Banner Surabaya Fitness"
-          className="w-full h-full object-cover object-center opacity-40 transition-all duration-700"
+          src={heroData.image}
+          alt="Atmosphere Gym"
+          className="w-full h-full object-cover opacity-35"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60 z-10" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
-        <div className="max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-red-600/90 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg shadow-red-600/30 uppercase tracking-wider mb-6 border border-red-500/50"
-          >
-            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-            {heroData.tag}
-          </motion.div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          {/* KARTU LOGO GRAFIS FS DI SEBELAH KIRI (SESUAI FOTO ANDA) */}
+          <div className="lg:col-span-4 hidden lg:block">
+            {displayLogo ? (
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-800 bg-gray-900/90 backdrop-blur-md p-2">
+                <img src={displayLogo} alt="FS Fitness Surabaya" className="w-full h-auto object-cover rounded-xl" />
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-800 bg-gradient-to-b from-gray-900 to-black p-8 text-center flex flex-col items-center justify-center min-h-[380px]">
+                <div className="bg-red-600 text-white font-black text-5xl px-6 py-3 rounded-2xl shadow-xl mb-4">
+                  FS
+                </div>
+                <h3 className="text-2xl font-black text-white tracking-wider">FITNESS SURABAYA</h3>
+                <p className="text-xs text-blue-400 tracking-widest uppercase font-bold mt-2">Fitness Equipment & Accessories</p>
+              </div>
+            )}
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-6xl md:text-7xl font-black text-white leading-tight uppercase tracking-tight mb-6"
-          >
-            {heroData.title.split(' ').map((word: string, i: number) => (
-              <span key={i} className={word.toLowerCase().includes('gym') || word.toLowerCase().includes('fitness') ? 'text-red-600' : ''}>
-                {word}{' '}
-              </span>
-            ))}
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg sm:text-xl text-gray-300 font-normal leading-relaxed mb-10 max-w-2xl"
-          >
-            {heroData.subtitle}
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center"
-          >
-            <button
-              onClick={scrollToProducts}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-red-600/40 hover:scale-105 transition-all cursor-pointer"
+          {/* TEKS JUDUL UTAMA & PROMO BADGE DI KANAN */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* BADGE MERAH CUCI GUDANG */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-block bg-red-600 text-white font-black text-xs sm:text-sm px-5 py-2 rounded-full uppercase tracking-wider shadow-lg shadow-red-600/40"
             >
-              <ShoppingBag size={20} />
-              <span>Lihat Produk Unggulan</span>
-              <ArrowRight size={18} />
-            </button>
+              {heroData.tag}
+            </motion.div>
 
-            <a
-              href={`https://wa.me/${waNumber}?text=Halo%20Surabaya%20Fitness,%20saya%20mau%20konsultasi%20alat%20fitness`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700 px-8 py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 backdrop-blur-sm hover:scale-105 transition-all cursor-pointer"
+            {/* TEKS TEBAL BESAR PUTIH */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-tight uppercase tracking-tight"
             >
-              <MessageCircle size={20} className="text-green-500" />
-              <span>Konsultasi WA Gratis</span>
-            </a>
-          </motion.div>
+              {heroData.title}
+            </motion.h1>
+
+            <p className="text-gray-300 text-base sm:text-lg max-w-2xl font-normal leading-relaxed">
+              {heroData.subtitle}
+            </p>
+
+          </div>
+
         </div>
       </div>
+
     </section>
   );
 };
