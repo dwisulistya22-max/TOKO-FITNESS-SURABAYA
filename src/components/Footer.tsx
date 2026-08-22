@@ -62,6 +62,8 @@ const Footer = (props: FooterProps) => {
     ? storeData.maps
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeData.address || STORE_CONFIG.address)}`;
 
+  const activeEmail = storeData.email || 'dwisulistya22@gmail.com';
+
   return (
     <footer className="bg-gray-900 text-gray-300 pt-16 pb-12 border-t border-gray-800" id="tentang">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -113,12 +115,12 @@ const Footer = (props: FooterProps) => {
             </ul>
           </div>
 
-          {/* HUBUNGI KAMI & ALAMAT GOOGLE MAPS */}
+          {/* HUBUNGI KAMI */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Hubungi Kami</h3>
             <ul className="space-y-3 text-sm text-gray-400">
               
-              {/* 📍 ALAMAT DENGAN LINK GOOGLE MAPS LANGSUNG */}
+              {/* 📍 ALAMAT DENGAN LINK GOOGLE MAPS */}
               <li>
                 <a 
                   href={mapsUrl} 
@@ -152,11 +154,18 @@ const Footer = (props: FooterProps) => {
                 </div>
               </li>
 
-              {/* ✉️ EMAIL */}
-              <li className="flex items-center gap-3 pt-1">
-                <Mail size={18} className="text-red-600 shrink-0" />
-                <span>{storeData.email}</span>
+              {/* ✉️ EMAIL BISA DIKLIK LANGSUNG (MAILTO) */}
+              <li className="pt-1">
+                <a
+                  href={`mailto:${activeEmail}?subject=Tanya%20Produk%20Surabaya%20Fitness`}
+                  className="flex items-center gap-3 text-gray-300 hover:text-red-500 transition-colors group cursor-pointer"
+                  title="Klik untuk langsung mengirim email"
+                >
+                  <Mail size={18} className="text-red-600 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="group-hover:underline underline-offset-4">{activeEmail}</span>
+                </a>
               </li>
+
             </ul>
           </div>
 
