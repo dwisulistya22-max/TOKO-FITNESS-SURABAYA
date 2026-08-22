@@ -50,6 +50,7 @@ const Footer = (props: FooterProps) => {
     fetchFooterData();
   }, []);
 
+  const displayLogo = props.logo || logoUrl;
   const safePhone = storeData?.phone || STORE_CONFIG.phone || '6281235907956, 6281332345448';
   const phones = safePhone.split(/[/,&\n]/).map((p: string) => p.trim()).filter(Boolean);
 
@@ -57,13 +58,11 @@ const Footer = (props: FooterProps) => {
     <footer className="bg-gray-900 text-gray-300 pt-16 pb-12 border-t border-gray-800" id="tentang">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-          
-          {/* LOGO & DESKRIPSI */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              {logoUrl && !imageError ? (
+              {displayLogo && !imageError ? (
                 <img 
-                  src={logoUrl} 
+                  src={displayLogo} 
                   alt="Logo" 
                   className="h-12 w-auto object-contain" 
                   onError={() => setImageError(true)}
@@ -84,7 +83,6 @@ const Footer = (props: FooterProps) => {
             </p>
           </div>
 
-          {/* TAUTAN CEPAT */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Tautan Cepat</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
@@ -94,7 +92,6 @@ const Footer = (props: FooterProps) => {
             </ul>
           </div>
 
-          {/* LAYANAN PELANGGAN */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Layanan Pelanggan</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
@@ -104,7 +101,6 @@ const Footer = (props: FooterProps) => {
             </ul>
           </div>
 
-          {/* HUBUNGI KAMI */}
           <div>
             <h3 className="text-white font-bold text-base mb-4">Hubungi Kami</h3>
             <ul className="space-y-3 text-sm text-gray-400">
@@ -113,7 +109,6 @@ const Footer = (props: FooterProps) => {
                 <span>{storeData.address}</span>
               </li>
 
-              {/* DUA NOMOR WA */}
               <li className="flex items-start gap-3">
                 <Phone size={18} className="text-red-600 shrink-0 mt-1" />
                 <div className="space-y-1">
@@ -137,10 +132,8 @@ const Footer = (props: FooterProps) => {
               </li>
             </ul>
           </div>
-
         </div>
 
-        {/* FOOTER BOTTOM */}
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
           <p>© 2024 TOKO FITNESS SURABAYA. All rights reserved.</p>
           
