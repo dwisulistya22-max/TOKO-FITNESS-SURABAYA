@@ -1,69 +1,26 @@
-export default {
-  name: 'storeConfig',
-  title: 'Info Toko',
-  type: 'document',
-  fields: [
-    {
-      name: 'name',
-      title: 'Nama Toko',
-      type: 'string',
-    },
-    {
-      name: 'description',
-      title: 'Deskripsi Toko',
-      type: 'text',
-    },
-    {
-      name: 'logo',
-      title: 'Logo Toko',
-      type: 'image',
-      options: { hotspot: true },
-    },
-    {
-      name: 'phone',
-      title: 'Nomor Telepon / WhatsApp',
-      type: 'string',
-    },
-    // ==========================================
-    // 🧡 ISIAN SHOPEE & TOKOPEDIA LENGKAP
-    // ==========================================
-    {
-      name: 'shopee',
-      title: 'Link Shopee Official Store',
-      type: 'string',
-      description: 'Contoh: https://shopee.co.id/tokofitnesssurabaya',
-    },
-    {
-      name: 'tokopedia',
-      title: 'Link Tokopedia Store',
-      type: 'string',
-      description: 'Contoh: https://tokopedia.com/tokofitnesssurabaya',
-    },
-    // ==========================================
-    {
-      name: 'facebook',
-      title: 'Facebook',
-      type: 'string',
-    },
-    {
-      name: 'tiktok',
-      title: 'TikTok',
-      type: 'string',
-    },
-    {
-      name: 'youtube',
-      title: 'YouTube',
-      type: 'string',
-    },
-    {
-      name: 'maps',
-      title: 'Link Google Maps',
-      type: 'string',
-    },
-    {
-      name: 'address',
-      title: 'Alamat Lengkap Toko',
-      type: 'text',
-    },
-  ],
+export const STORE_CONFIG = {
+  name: "TOKO FITNESS SURABAYA",
+  logo: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
+  slogan: "Kualitas Gym Profesional Di Rumah Anda",
+  phone: "6281332345448",
+  email: "dwisulistya22@gmail.com",
+  address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
+  
+  // 🧡 MASUKKAN LINK TOKO SHOPEE ANDA DI SINI
+  shopee: "https://shopee.co.id/search?keyword=toko%20fitness%20surabaya", 
+
+  hero: {
+    title: "KUALITAS GYM PROFESIONAL DI RUMAH ANDA",
+    subtitle: "Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.",
+    tag: "PROMO CUCI GUDANG 2024"
+  }
 };
+
+export const CATEGORIES = [
+  { id: 'cardio', name: 'Cardio' },
+  { id: 'strength', name: 'Strength' },
+  { id: 'homegym', name: 'Home Gym' },
+  { id: 'aksesoris', name: 'Aksesoris' }
+];
+
+export const PRODUCTS = [];
