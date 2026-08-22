@@ -9,11 +9,19 @@ import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
 
+// =========================================================
+// KONFIGURASI ADMIN & SANITY STUDIO ANDA
+// =========================================================
+// Link Sanity Studio milik Anda dari screenshot
+const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
+
+// 🔑 PASSWORD ADMIN TOKO ANDA (Bisa Anda ubah di sini)
+const ADMIN_PASSWORD = 'admin123'; 
+
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [logo, setLogo] = useState(STORE_CONFIG.logo);
 
-  // Load logo dari local (sebagai cadangan awal)
   useEffect(() => {
     const savedLogo = localStorage.getItem('fitness_logo');
     if (savedLogo && savedLogo.length > 5) {
@@ -29,23 +37,29 @@ function App() {
   };
 
   // =========================================================
-  // UPGRADE: LOGIN ADMIN LANGSUNG KE SANITY STUDIO
-  // Tidak pakai prompt manual lagi, langsung masuk ke panel canggih
+  // FUNGSI LOGIN ADMIN: MINTA PASSWORD SEBELUM KE SANITY
   // =========================================================
-  const handleLogin = () => {
-    window.open('https://856jrik3.sanity.studio', '_blank');
+  const handleAdminLogin = () => {
+    const inputPassword = prompt("🔐 Masukkan Password Admin Surabaya Fitness:");
+    
+    if (inputPassword === ADMIN_PASSWORD) {
+      alert("✅ Password Benar! Anda akan diarahkan ke Sanity Studio...");
+      window.open(SANITY_STUDIO_URL, '_blank');
+    } else if (inputPassword !== null) {
+      alert("❌ Password Salah! Akses ditolak.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 relative">
       
-      {/* TOMBOL ADMIN SANITY MELAYANG DI KIRI BAWAH (Agar mudah diakses pemilik web) */}
+      {/* TOMBOL ADMIN PANEL MELAYANG DI MOJOK KIRI BAWAH */}
       <button 
-        onClick={handleLogin}
-        className="fixed bottom-6 left-6 bg-gray-900 text-white px-4 py-3 rounded-full font-bold shadow-lg hover:bg-gray-800 z-50 flex items-center gap-2 border-2 border-gray-700"
-        title="Masuk ke Panel Sanity"
+        onClick={handleAdminLogin}
+        className="fixed bottom-6 left-6 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-full font-bold shadow-2xl z-50 flex items-center gap-2 border-2 border-slate-700 transition-all hover:scale-105 cursor-pointer"
+        title="Masuk ke Panel Sanity Studio"
       >
-        🔐 <span className="hidden sm:inline">Admin Panel</span>
+        🔐 <span>Admin Panel</span>
       </button>
 
       <Navbar isAdmin={false} logo={logo} onLogoChange={handleLogoChange} />
@@ -54,7 +68,7 @@ function App() {
         <Hero isAdmin={false} logo={logo} onLogoChange={handleLogoChange} />
         <Categories onSelectCategory={setActiveCategory} isAdmin={false} />
         
-        {/* DAFTAR PRODUK */}
+        {/* DAFTAR PRODUK DARI SANITY */}
         <FeaturedProducts 
           activeCategory={activeCategory} 
           onCategoryChange={setActiveCategory} 
@@ -86,8 +100,8 @@ function App() {
         </section>
       </main>
       
-      {/* Saat footer "Login Admin" diklik, otomatis buka Sanity */}
-      <Footer isAdmin={false} logo={logo} onLogin={handleLogin} />
+      {/* FOOTER: "SUPER ADMIN LOGIN" DI FOOTER JUGA MEMINTA PASSWORD */}
+      <Footer isAdmin={false} logo={logo} onLogin={handleAdminLogin} />
       <WhatsAppButton />
     </div>
   );
