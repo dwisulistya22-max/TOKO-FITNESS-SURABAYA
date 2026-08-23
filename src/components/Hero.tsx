@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
-const SANITY_PROJECT_ID = 'qi4rocc0';
+const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const SANITY_DATASET = 'production';
-const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
 
-// 🔴 FOTO GYM LED MERAH ELEGAN (PERSIS SEPERTI FOTO PILIHAN ANDA)
-const RED_LED_GYM_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
+// FOTO DEFAULT GYM LED MERAH
+const FALLBACK_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
 
 export interface HeroProps {
   isAdmin?: boolean;
@@ -19,36 +18,41 @@ const Hero = (props: HeroProps) => {
   const [heroData, setHeroData] = useState<any>({
     title: STORE_CONFIG.hero?.title || 'KUALITAS GYM PROFESIONAL DI RUMAH ANDA',
     subtitle: STORE_CONFIG.hero?.subtitle || 'Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.',
-    tag: STORE_CONFIG.hero?.tag || 'PROMO CUCI GUDANG 2024',
-    image: RED_LED_GYM_BG,
+    tag: 'PROMO SETIAP HARI',
+    image: FALLBACK_BG,
     poster: props.logo || ''
   });
 
   useEffect(() => {
     const fetchHeroFromSanity = async () => {
-      try {
-        const query = encodeURIComponent(`*[_type in ["slider", "banner", "hero"]][0]{
-          "title": coalesce(title, heading, name, ""),
-          "subtitle": coalesce(subtitle, description, subtext, desc, ""),
-          "tag": coalesce(tag, badge, promo, label, ""),
-          "image": coalesce(image.asset->url, photo.asset->url, bgImage.asset->url, "")
-        }`);
+      // QUERY PINTAR MEMBACA SEMUA KOLOM SLIDER / BANNER SANITY ANDA
+      const query = encodeURIComponent(`*[_type in ["slider", "banner", "hero"]] | order(_createdAt desc)[0]{
+        "title": coalesce(title, heading, name, ""),
+        "subtitle": coalesce(subtitle, description, subtext, desc, ""),
+        "tag": coalesce(tag, tagPromo, promoTag, badge, promo, label, ""),
+        "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, bgImage.asset->url, banner.asset->url, cover.asset->url, "")
+      }`);
 
-        const response = await fetch(`${SANITY_URL}${query}`, { cache: 'no-store' });
-        const data = await response.json();
+      for (const projId of PROJECT_IDS) {
+        try {
+          const url = `https://${projId}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=${query}`;
+          const response = await fetch(url, { cache: 'no-store' });
+          const data = await response.json();
 
-        if (data?.result) {
-          const res = data.result;
-          setHeroData((prev: any) => ({
-            ...prev,
-            title: res.title || prev.title,
-            subtitle: res.subtitle || prev.subtitle,
-            tag: res.tag || prev.tag,
-            image: (res.image && res.image.length > 5) ? res.image : RED_LED_GYM_BG
-          }));
+          if (data?.result) {
+            const res = data.result;
+            setHeroData((prev: any) => ({
+              ...prev,
+              title: (res.title && res.title.length > 2) ? res.title : prev.title,
+              subtitle: (res.subtitle && res.subtitle.length > 2) ? res.subtitle : prev.subtitle,
+              tag: (res.tag && res.tag.length > 1) ? res.tag : 'PROMO SETIAP HARI',
+              image: (res.image && res.image.length > 5) ? res.image : FALLBACK_BG
+            }));
+            break;
+          }
+        } catch (err) {
+          console.error('Fetching Hero Error:', err);
         }
-      } catch (err) {
-        console.error('Gagal mengambil banner:', err);
       }
     };
 
@@ -60,14 +64,13 @@ const Hero = (props: HeroProps) => {
   return (
     <section className="relative min-h-[88vh] bg-black text-white flex items-center overflow-hidden py-12 antialiased" id="beranda">
       
-      {/* BACKGROUND GYM LED MERAH MEWAH & GAGAH */}
+      {/* 🔴 BACKGROUND GYM LED MERAH HASIL UPLOAD SANITY STUDIO ANDA */}
       <div className="absolute inset-0 z-0">
         <img
           src={heroData.image}
           alt="Gym Red LED Atmosphere"
-          className="w-full h-full object-cover object-center opacity-60"
+          className="w-full h-full object-cover object-center opacity-55"
         />
-        {/* Layer kegelapan transparan agar lampu merah menyala & teks mudah dibaca */}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60 z-10" />
       </div>
@@ -75,7 +78,7 @@ const Hero = (props: HeroProps) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* POSTER KARTU LOGO FS DI SEBELAH KIRI (SAMA PERSIS DENGAN NAVBAR) */}
+          {/* POSTER KARTU LOGO FS KIRI */}
           <div className="lg:col-span-5 flex justify-center lg:justify-start">
             <div className="relative rounded-2xl overflow-hidden border border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-black/80 max-w-[380px] w-full">
               {displayLogo ? (
@@ -96,10 +99,10 @@ const Hero = (props: HeroProps) => {
             </div>
           </div>
 
-          {/* TEKS PROMO MERAH & JUDUL UTAMA BESAR DI KANAN */}
+          {/* TEKS PROMO & JUDUL DARI SANITY STUDIO */}
           <div className="lg:col-span-7 space-y-6 text-left">
             
-            {/* BADGE MERAH CUCI GUDANG */}
+            {/* BADGE TAG PROMO (CONTOH: "PROMO SETIAP HARI") */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -109,7 +112,7 @@ const Hero = (props: HeroProps) => {
               {heroData.tag}
             </motion.div>
 
-            {/* TEKS JUDUL RAKSASA PUTIH GAGAH */}
+            {/* TEKS JUDUL UTAMA */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -119,7 +122,7 @@ const Hero = (props: HeroProps) => {
               {heroData.title}
             </motion.h1>
 
-            {/* SUB-JUDUL / DESKRIPSI */}
+            {/* DESKRIPSI */}
             <p className="text-gray-200 text-base sm:text-xl font-normal leading-relaxed max-w-xl">
               {heroData.subtitle}
             </p>
