@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
-
-// LINK FALLBACK HANYA UNTUK TOMBOL SHOPEE MALL DI HEADER
 const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// FUNGSI PEMBERSIH LINK OTOMATIS
+// BATAS MAKSIMAL PRODUK DI HALAMAN DEPAN
+const HOMEPAGE_LIMIT = 8;
+
 const fixLink = (url: any) => {
   if (!url || typeof url !== 'string') return '';
-  let link = url.trim();
+  const link = url.trim();
   if (!link) return '';
   if (!link.startsWith('http://') && !link.startsWith('https://')) {
-    link = 'https://' + link;
+    return 'https://' + link;
   }
   return link;
 };
@@ -32,6 +32,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [selected, setSelected] = useState<any>(null);
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
   const [globalShopee, setGlobalShopee] = useState<string>(
     fixLink((STORE_CONFIG as any)?.shopee) || SHOPEE_FALLBACK
   );
@@ -46,7 +47,8 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
     const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
       _id, name, price, description, specs, tag, rating, reviews,
-      shopeeUrl, shopee,
+      shopeeUrl, shopee, order, sortOrder, urutan,
+      isFeatured, featured, isUnggulan, showOnHome,
       "mainImage": coalesce(image.asset->url, foto.asset->url, photo.asset->url, ""),
       "galleryImages": coalesce(images[].asset->url, gallery[].asset->url, photos[].asset->url, []),
       "category": coalesce(category->title, category->name, category, "Umum")
@@ -75,37 +77,57 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         const prodData = await prodRes.json();
 
         if (prodData?.result?.length) {
-          setProducts(
-            prodData.result.map((item: any) => {
-              const allImages: string[] = [];
-              if (item.mainImage) allImages.push(item.mainImage);
-              if (Array.isArray(item.galleryImages)) {
-                item.galleryImages.forEach((img: string) => {
-                  if (img && !allImages.includes(img)) allImages.push(img);
-                });
-              }
-              if (allImages.length === 0) {
-                allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
-              }
+          const mappedProducts = prodData.result.map((item: any) => {
+            const allImages: string[] = [];
+            if (item.mainImage) allImages.push(item.mainImage);
+            if (Array.isArray(item.galleryImages)) {
+              item.galleryImages.forEach((img: string) => {
+                if (img && !allImages.includes(img)) allImages.push(img);
+              });
+            }
+            if (allImages.length === 0) {
+              allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
+            }
 
-              // HANYA ambil link jika produk ini benar-benar diisi link Shopee-nya di Sanity
-              const productSpecificShopee = fixLink(item.shopeeUrl || item.shopee);
+            const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
+            const tagUpper = String(item.tag || '').toUpperCase().trim();
 
-              return {
-                id: item._id,
-                name: item.name || 'Produk Fitness',
-                price: item.price || 0,
-                description: item.description || '',
-                specs: item.specs || '',
-                tag: item.tag || '',
-                rating: item.rating || 5,
-                reviews: item.reviews || 0,
-                images: allImages,
-                category: item.category || 'Umum',
-                shopeeUrl: productSpecificShopee // Jika kosong, nilainya string kosong ""
-              };
-            })
-          );
+            // SAKELAR FILTER UNGUGULAN
+            const isFeatured = Boolean(
+              item.isFeatured ||
+              item.featured ||
+              item.isUnggulan ||
+              item.showOnHome ||
+              tagUpper === 'UNGGULAN' ||
+              tagUpper === 'UTAMA' ||
+              tagUpper === 'DEPAN' ||
+              tagUpper === 'FEATURED' ||
+              (!isNaN(Number(tagUpper)) && Number(tagUpper) > 0 && Number(tagUpper) <= 8)
+            );
+
+            let priorityNumber = 999;
+            if (item.order !== undefined) priorityNumber = Number(item.order);
+            else if (!isNaN(Number(tagUpper)) && Number(tagUpper) > 0) priorityNumber = Number(tagUpper);
+
+            return {
+              id: item._id,
+              name: item.name || 'Produk Fitness',
+              price: item.price || 0,
+              description: item.description || '',
+              specs: item.specs || '',
+              tag: isNaN(Number(item.tag)) ? item.tag : '',
+              rating: item.rating || 5,
+              reviews: item.reviews || 0,
+              order: priorityNumber,
+              isFeatured,
+              images: allImages,
+              category: item.category || 'Umum',
+              shopeeUrl: itemShopeeLink
+            };
+          });
+
+          mappedProducts.sort((a: any, b: any) => a.order - b.order);
+          setProducts(mappedProducts);
           break;
         }
       } catch (err) {
@@ -119,23 +141,49 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     fetchProductsAndStore();
   }, []);
 
+  useEffect(() => {
+    setShowAll(false);
+  }, [activeCategory]);
+
   const openDetail = (product: any) => {
     setSelected(product);
     setActiveImgIndex(0);
   };
 
-  const filtered =
+  // Filter Kategori
+  const categoryProducts =
     !activeCategory || activeCategory === 'Semua'
       ? products
       : products.filter(
           (p) => String(p.category).toLowerCase() === String(activeCategory).toLowerCase()
         );
 
+  // Ambil hanya produk yang ditandai Unggulan
+  const featuredOnly = products.filter((p) => p.isFeatured);
+
+  // PENENTU BARANG YANG DITAMPILKAN:
+  let displayProducts: any[] = [];
+
+  if (activeCategory === 'Semua') {
+    if (showAll) {
+      // Buka semua jika tombol "Lihat Semua" diklik
+      displayProducts = products;
+    } else {
+      // BATASI HANYA 4 - 8 BARANG PILIHAN DI HALAMAN DEPAN
+      displayProducts =
+        featuredOnly.length > 0
+          ? featuredOnly.slice(0, HOMEPAGE_LIMIT)
+          : products.slice(0, 4); // default 4 barang saja jika belum ada yang ditandai
+    }
+  } else {
+    // Jika klik Kategori (Cardio, dll) -> Tampilkan semua barang kategori tersebut
+    displayProducts = categoryProducts;
+  }
+
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
   return (
     <section id="products" className="py-20 bg-white">
-      {/* MODAL DETAIL PRODUK */}
       <AnimatePresence>
         {selected && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
@@ -249,7 +297,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     <ShoppingCart size={20} /> Pesan via WhatsApp
                   </a>
 
-                  {/* Tombol Shopee di Modal HANYA muncul jika link produk diisi di Sanity */}
                   {selected.shopeeUrl && (
                     <a
                       href={selected.shopeeUrl}
@@ -271,9 +318,13 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
           <div>
             <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 uppercase tracking-tighter italic">
-              Produk Unggulan
+              Produk Pilihan
             </h2>
-            <p className="text-gray-500">Kualitas Gym Profesional kini hadir di rumah Anda.</p>
+            <p className="text-gray-500">
+              {activeCategory === 'Semua'
+                ? 'Rekomendasi peralatan fitness pilihan terbaik.'
+                : `Koleksi lengkap kategori ${activeCategory}`}
+            </p>
           </div>
           <div className="flex gap-2">
             <button
@@ -299,71 +350,94 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             ⏳ Menghubungkan ke Sanity Studio...
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filtered.map((p: any) => (
-              <div
-                key={p.id}
-                className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                    <img
-                      src={p.images[0]}
-                      alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    {p.tag && (
-                      <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
-                        {p.tag}
-                      </span>
-                    )}
-                    {p.images.length > 1 && (
-                      <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md">
-                        📷 {p.images.length} FOTO
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <div className="text-[10px] text-red-600 font-bold uppercase mb-1">
-                      {p.category}
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {displayProducts.map((p: any) => (
+                <div
+                  key={p.id}
+                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                      <img
+                        src={p.images[0]}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      {p.tag && (
+                        <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
+                          {p.tag}
+                        </span>
+                      )}
+                      {p.images.length > 1 && (
+                        <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md">
+                          📷 {p.images.length} FOTO
+                        </span>
+                      )}
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight h-10">
-                      {p.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-yellow-400 mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={12} fill={i < (p.rating || 5) ? 'currentColor' : 'none'} />
-                      ))}
-                      <span className="text-gray-400 text-[10px] ml-1">({p.reviews || '12+'})</span>
+                    <div className="p-6">
+                      <div className="text-[10px] text-red-600 font-bold uppercase mb-1">
+                        {p.category}
+                      </div>
+                      <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight h-10">
+                        {p.name}
+                      </h3>
+                      <div className="flex items-center gap-1 text-yellow-400 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={12} fill={i < (p.rating || 5) ? 'currentColor' : 'none'} />
+                        ))}
+                        <span className="text-gray-400 text-[10px] ml-1">({p.reviews || '12+'})</span>
+                      </div>
+                      <div className="text-xl font-black text-red-600">{formatPrice(p.price)}</div>
                     </div>
-                    <div className="text-xl font-black text-red-600">{formatPrice(p.price)}</div>
                   </div>
-                </div>
 
-                <div className="p-6 pt-0 space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => openDetail(p)}
-                    className="w-full bg-gray-900 hover:bg-red-600 text-white py-3 rounded-xl text-xs font-bold transition-all"
-                  >
-                    Detail & Galeri
-                  </button>
-
-                  {/* TOMBOL SHOPEE DI KARTU HANYA MUNCUL JIKA TERDAPAT LINK PER PRODUK */}
-                  {p.shopeeUrl && (
-                    <a
-                      href={p.shopeeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
+                  <div className="p-6 pt-0 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => openDetail(p)}
+                      className="w-full bg-gray-900 hover:bg-red-600 text-white py-3 rounded-xl text-xs font-bold transition-all"
                     >
-                      🧡 Beli di Shopee
-                    </a>
-                  )}
+                      Detail & Galeri
+                    </button>
+
+                    {/* TOMBOL SHOPEE HANYA JIKA LINK PRODUK ADA */}
+                    {p.shopeeUrl && (
+                      <a
+                        href={p.shopeeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
+                      >
+                        🧡 Beli di Shopee
+                      </a>
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* TOMBOL BUKA / TUTUP SEMUA PRODUK */}
+            {activeCategory === 'Semua' && products.length > displayProducts.length && (
+              <div className="text-center mt-12">
+                <button
+                  type="button"
+                  onClick={() => setShowAll(!showAll)}
+                  className="inline-flex items-center gap-2 bg-gray-900 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-xl hover:shadow-red-600/30 transform hover:-translate-y-0.5"
+                >
+                  {showAll ? (
+                    <>
+                      Tampilkan Produk Pilihan Saja <ChevronUp size={18} />
+                    </>
+                  ) : (
+                    <>
+                      Lihat Semua Katalog Produk ({products.length} Barang) <ChevronDown size={18} />
+                    </>
+                  )}
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </section>
