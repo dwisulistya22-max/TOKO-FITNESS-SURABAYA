@@ -9,7 +9,7 @@ const DATASET = 'production';
 // LINK CADANGAN TOKO UTAMA
 const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// FUNGSI PEMBERSIH LINK OTOMATIS (MENGEMBALIKAN STRING KOSONG JIKA TIDAK ADA LINK)
+// FUNGSI PEMBERSIH LINK OTOMATIS
 const fixLink = (url: any) => {
   if (!url || typeof url !== 'string') return '';
   const link = url.trim();
@@ -45,9 +45,11 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
       "facebook": coalesce(facebook, "")
     }`);
 
-    const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
+    // QUERY CERDAS: Mengambil "order" / "sortOrder" / "urutan", diurutkan ASCENDING (1, 2, 3...)
+    const productQuery = encodeURIComponent(`*[_type == "product"] | order(coalesce(order, sortOrder, urutan, 999) asc, _createdAt desc) {
       _id, name, price, description, specs, tag, rating, reviews,
       shopeeUrl, shopee,
+      "order": coalesce(order, sortOrder, urutan, 999),
       "mainImage": coalesce(image.asset->url, foto.asset->url, photo.asset->url, ""),
       "galleryImages": coalesce(images[].asset->url, gallery[].asset->url, photos[].asset->url, []),
       "category": coalesce(category->title, category->name, category, "Umum")
@@ -76,38 +78,40 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         const prodData = await prodRes.json();
 
         if (prodData?.result?.length) {
-          setProducts(
-            prodData.result.map((item: any) => {
-              const allImages: string[] = [];
-              if (item.mainImage) allImages.push(item.mainImage);
-              if (Array.isArray(item.galleryImages)) {
-                item.galleryImages.forEach((img: string) => {
-                  if (img && !allImages.includes(img)) allImages.push(img);
-                });
-              }
-              if (allImages.length === 0) {
-                allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
-              }
+          const mappedProducts = prodData.result.map((item: any) => {
+            const allImages: string[] = [];
+            if (item.mainImage) allImages.push(item.mainImage);
+            if (Array.isArray(item.galleryImages)) {
+              item.galleryImages.forEach((img: string) => {
+                if (img && !allImages.includes(img)) allImages.push(img);
+              });
+            }
+            if (allImages.length === 0) {
+              allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
+            }
 
-              // Kunci Perubahan: HANYA pakai link khusus produk ini.
-              // Jika di Sanity tidak diisi, hasilnya string kosong "".
-              const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
+            const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
 
-              return {
-                id: item._id,
-                name: item.name || 'Produk Fitness',
-                price: item.price || 0,
-                description: item.description || '',
-                specs: item.specs || '',
-                tag: item.tag || '',
-                rating: item.rating || 5,
-                reviews: item.reviews || 0,
-                images: allImages,
-                category: item.category || 'Umum',
-                shopeeUrl: itemShopeeLink // Jika kosong = ""
-              };
-            })
-          );
+            return {
+              id: item._id,
+              name: item.name || 'Produk Fitness',
+              price: item.price || 0,
+              description: item.description || '',
+              specs: item.specs || '',
+              tag: item.tag || '',
+              rating: item.rating || 5,
+              reviews: item.reviews || 0,
+              order: Number(item.order !== undefined ? item.order : 999),
+              images: allImages,
+              category: item.category || 'Umum',
+              shopeeUrl: itemShopeeLink
+            };
+          });
+
+          // SORTING TAMBAHAN DI FRONTEND (Angka Terkecil 1, 2, 3 Muncul Duluan)
+          mappedProducts.sort((a: any, b: any) => a.order - b.order);
+
+          setProducts(mappedProducts);
           break;
         }
       } catch (err) {
@@ -172,7 +176,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                           )
                         }
                         className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80"
-                        aria-label="Foto sebelumnya"
                       >
                         <ChevronLeft size={20} />
                       </button>
@@ -184,7 +187,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                           )
                         }
                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80"
-                        aria-label="Foto berikutnya"
                       >
                         <ChevronRight size={20} />
                       </button>
@@ -252,7 +254,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     <ShoppingCart size={20} /> Pesan via WhatsApp
                   </a>
 
-                  {/* Tombol Shopee di Modal Detail HANYA MUNCUL jika shopeeUrl ADA */}
                   {selected.shopeeUrl && (
                     <a
                       href={selected.shopeeUrl}
@@ -352,7 +353,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     Detail & Galeri
                   </button>
 
-                  {/* Tombol Shopee di Kartu HANYA MUNCUL jika shopeeUrl ADA */}
                   {p.shopeeUrl && (
                     <a
                       href={p.shopeeUrl}
