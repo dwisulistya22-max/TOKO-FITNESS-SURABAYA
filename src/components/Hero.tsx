@@ -12,7 +12,6 @@ const Hero = () => {
 
   useEffect(() => {
     const fetchHeroData = async () => {
-      // Query untuk mengambil Logo Toko & Gambar Background dari Slider/Banner Sanity
       const query = encodeURIComponent(`{
         "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
           "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
@@ -56,25 +55,27 @@ const Hero = () => {
   }, []);
 
   return (
-    <section id="hero" className="relative min-h-[75vh] bg-black text-white flex items-center overflow-hidden py-12">
-      {/* GAMBAR BACKGROUND DINAMIS DARI SANITY */}
+    <section id="hero" className="relative min-h-[75vh] bg-gray-950 text-white flex items-center overflow-hidden py-12">
+      
+      {/* GAMBAR BACKGROUND - DIBUAT JAUH LEBIH TERANG (OPACITY 75%) */}
       <div className="absolute inset-0 z-0">
         <img
           src={bgUrl}
           alt="Gym Background"
-          className="w-full h-full object-cover object-center opacity-40 scale-105 transform transition-transform duration-1000"
+          className="w-full h-full object-cover object-center opacity-75 scale-105 transform transition-transform duration-1000"
           onError={(e: any) => {
             e.target.src = DEFAULT_BG;
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60 z-10" />
+        {/* EFEK OVERLAY HITAM TIPIS & HALUS SUPAYA TEKS TETAP DIBACA DENGAN JELAS */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 z-10" />
       </div>
 
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-4xl flex flex-col items-start text-left space-y-6">
           
-          {/* 1. LOGO RESMI - DIPERBESAR */}
+          {/* 1. LOGO RESMI */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -96,7 +97,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight italic leading-tight text-white"
+            className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight italic leading-tight text-white drop-shadow-md"
           >
             Kualitas Gym{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-orange-500">
@@ -105,23 +106,23 @@ const Hero = () => {
             Di Rumah Anda
           </motion.h1>
 
-          {/* 3. DESKRIPSI & GARANSI DITARUH SEJAJAR DI BAGIAN BAWAH */}
+          {/* 3. DESKRIPSI & GARANSI SEJAJAR */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-gray-800/80 w-full"
+            className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-white/20 w-full"
           >
-            <p className="text-gray-400 text-xs sm:text-sm max-w-md leading-relaxed font-normal">
+            <p className="text-gray-200 text-xs sm:text-sm max-w-md leading-relaxed font-medium drop-shadow">
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Siap kirim & pasang langsung di rumah Anda.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-200">
-              <div className="flex items-center gap-1.5 bg-gray-900/80 px-3 py-2 rounded-xl border border-gray-800 shadow-md">
+            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-white">
+              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 shadow-lg">
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
                 <span>Garansi Resmi 1-3 Tahun</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-gray-900/80 px-3 py-2 rounded-xl border border-gray-800 shadow-md">
+              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 shadow-lg">
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
                 <span>Bisa COD & Pasang Onsite</span>
               </div>
