@@ -7,9 +7,6 @@ const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// BATAS PRODUK YANG DITAMPILKAN DI HALAMAN UTAMA (MISAL: 8 PRODUK)
-const INITIAL_DISPLAY_LIMIT = 8;
-
 const fixLink = (url: any) => {
   if (!url || typeof url !== 'string') return '';
   const link = url.trim();
@@ -32,7 +29,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [selected, setSelected] = useState<any>(null);
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false); // State untuk buka/tutup semua produk
+  const [showAll, setShowAll] = useState(false);
   const [globalShopee, setGlobalShopee] = useState<string>(
     fixLink((STORE_CONFIG as any)?.shopee) || SHOPEE_FALLBACK
   );
@@ -45,9 +42,11 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
       "facebook": coalesce(facebook, "")
     }`);
 
+    // Query cerdas: mengambil status featured / centang / tag unggulan
     const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
       _id, name, price, description, specs, tag, rating, reviews,
       shopeeUrl, shopee, order, sortOrder, urutan,
+      isFeatured, featured, isUnggulan, showOnHome, showHomepage,
       "mainImage": coalesce(image.asset->url, foto.asset->url, photo.asset->url, ""),
       "galleryImages": coalesce(images[].asset->url, gallery[].asset->url, photos[].asset->url, []),
       "category": coalesce(category->title, category->name, category, "Umum")
@@ -90,6 +89,22 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
             const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
 
+            // LOGIKA FILTER DIPILIH UNTUK HALAMAN MUKA:
+            // 1. Cek tombol sakelar / boolean (isFeatured, showOnHome, dll)
+            // 2. ATAU Cek jika kolom Tag diisi kata "UNGGULAN" / "FEATURED"
+            // 3. ATAU Cek jika kolom Order diisi angka <= 8
+            const isMarkedFeatured = Boolean(
+              item.isFeatured ||
+              item.featured ||
+              item.isUnggulan ||
+              item.showOnHome ||
+              item.showHomepage ||
+              (item.tag && String(item.tag).toUpperCase().includes('UNGGULAN')) ||
+              (item.tag && String(item.tag).toUpperCase().includes('FEATURED')) ||
+              (item.order !== undefined && Number(item.order) <= 8) ||
+              (item.sortOrder !== undefined && Number(item.sortOrder) <= 8)
+            );
+
             let priorityNumber = 999;
             if (item.order !== undefined) priorityNumber = Number(item.order);
             else if (item.sortOrder !== undefined) priorityNumber = Number(item.sortOrder);
@@ -106,6 +121,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               rating: item.rating || 5,
               reviews: item.reviews || 0,
               order: priorityNumber,
+              isFeatured: isMarkedFeatured, // Status Pilihan Halaman Muka
               images: allImages,
               category: item.category || 'Umum',
               shopeeUrl: itemShopeeLink
@@ -127,7 +143,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     fetchProductsAndStore();
   }, []);
 
-  // Reset status pembatasan ketika kategori berubah
   useEffect(() => {
     setShowAll(false);
   }, [activeCategory]);
@@ -137,21 +152,26 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     setActiveImgIndex(0);
   };
 
-  // Filter Kategori
-  const filtered =
+  // 1. Filter Kategori Terlebih Dahulu
+  const filteredByCategory =
     !activeCategory || activeCategory === 'Semua'
       ? products
       : products.filter(
           (p) => String(p.category).toLowerCase() === String(activeCategory).toLowerCase()
         );
 
-  // LOGIKA PEMBATASAN PRODUK:
-  // Jika di tab "Semua" dan showAll = false, sembunyikan sisanya.
-  // Jika memilih kategori spesifik (Cardio dll), tampilkan SEMUA produk kategori itu.
+  // 2. Filter Produk yang Tampil di Halaman Muka (Tab "Semua")
+  const featuredOnly = filteredByCategory.filter((p) => p.isFeatured);
+
+  // Jika tidak ada satu pun produk yang ditandai, tampilkan 8 produk pertama sebagai cadangan
+  const defaultHomepageProducts =
+    featuredOnly.length > 0 ? featuredOnly : filteredByCategory.slice(0, 8);
+
+  // 3. Tentukan produk akhir yang akan di-render di layar
   const displayProducts =
     activeCategory === 'Semua' && !showAll
-      ? filtered.slice(0, INITIAL_DISPLAY_LIMIT)
-      : filtered;
+      ? defaultHomepageProducts
+      : filteredByCategory;
 
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
@@ -295,8 +315,8 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             </h2>
             <p className="text-gray-500">
               {activeCategory === 'Semua'
-                ? 'Menampilkan koleksi peralatan fitness unggulan.'
-                : `Menampilkan koleksi kategori ${activeCategory}`}
+                ? 'Pilihan alat fitness rekomendasi terbaik untuk Anda.'
+                : `Koleksi lengkap kategori ${activeCategory}`}
             </p>
           </div>
           <div className="flex gap-2">
@@ -324,7 +344,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           </div>
         ) : (
           <>
-            {/* GRID PRODUK TERBATAS / SESUAI KATEGORI */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {displayProducts.map((p: any) => (
                 <div
@@ -390,8 +409,8 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               ))}
             </div>
 
-            {/* TOMBOL BUKA / TUTUP SELURUH PRODUK (HANYA MUNCUL JIKA LEBIH DARI LIMIT) */}
-            {activeCategory === 'Semua' && filtered.length > INITIAL_DISPLAY_LIMIT && (
+            {/* TOMBOL LIHAT SEMUA PRODUK */}
+            {activeCategory === 'Semua' && filteredByCategory.length > displayProducts.length && (
               <div className="text-center mt-12">
                 <button
                   type="button"
@@ -400,11 +419,11 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 >
                   {showAll ? (
                     <>
-                      Sembunyikan Sebagian Produk <ChevronUp size={18} />
+                      Tampilkan Produk Pilihan Saja <ChevronUp size={18} />
                     </>
                   ) : (
                     <>
-                      Lihat Semua Produk ({filtered.length} Barang) <ChevronDown size={18} />
+                      Lihat Semua Katalog Produk ({filteredByCategory.length} Barang) <ChevronDown size={18} />
                     </>
                   )}
                 </button>
