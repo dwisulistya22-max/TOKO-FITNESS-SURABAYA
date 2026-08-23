@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, Mail, ExternalLink } from 'lucide-react';
+import { MapPin, Phone, Mail, ExternalLink, Lock } from 'lucide-react';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
@@ -19,31 +19,41 @@ const fixLink = (url: any) => {
 
 const Footer = () => {
   const [shopeeUrl, setShopeeUrl] = useState<string>(fixLink((STORE_CONFIG as any)?.shopee));
+  const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
 
   useEffect(() => {
     const fetchFooterData = async () => {
-      const query = encodeURIComponent(`*[_type in ["storeConfig","storeInfo","settings"]][0]{
-        "shopee": coalesce(shopee, shopeeUrl, ""),
-        "facebook": coalesce(facebook, "")
+      const query = encodeURIComponent(`{
+        "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
+          "shopee": coalesce(shopee, shopeeUrl, ""),
+          "facebook": coalesce(facebook, ""),
+          "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
+        }
       }`);
 
       for (const id of PROJECT_IDS) {
         try {
           const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`, { cache: 'no-store' });
           const data = await res.json();
-          let foundShopee = data?.result?.shopee;
-          const fbLink = data?.result?.facebook;
           
-          if (!foundShopee && fbLink && (fbLink.includes('sh.ee') || fbLink.includes('shopee'))) {
-            foundShopee = fbLink;
-          }
-          
-          if (foundShopee) {
-            setShopeeUrl(fixLink(foundShopee));
+          if (data?.result?.store) {
+            const storeData = data.result.store;
+            if (storeData.logo) setLogoUrl(storeData.logo);
+
+            let foundShopee = storeData.shopee;
+            const fbLink = storeData.facebook;
+            
+            if (!foundShopee && fbLink && (fbLink.includes('sh.ee') || fbLink.includes('shopee'))) {
+              foundShopee = fbLink;
+            }
+            
+            if (foundShopee) {
+              setShopeeUrl(fixLink(foundShopee));
+            }
             break;
           }
         } catch (err) { 
-          console.error(err); 
+          console.error('Error fetching footer data:', err); 
         }
       }
     };
@@ -58,13 +68,25 @@ const Footer = () => {
           {/* KOLOM 1: LOGO & SHOPEE */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Logo" className="h-12 w-12 object-contain rounded-xl bg-white p-1" />
+              <img 
+                src={logoUrl} 
+                alt="Fitness Surabaya Logo" 
+                className="h-12 w-12 object-contain rounded-xl bg-white p-1" 
+                onError={(e: any) => {
+                  e.target.src = '/logo.png';
+                }}
+              />
               <span className="font-black text-xl tracking-tight italic uppercase">FITNESS SURABAYA</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda dengan peralatan berkualitas tinggi.
             </p>
-            <a href={shopeeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all">
+            <a 
+              href={shopeeUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all"
+            >
               🧡 Shopee Official <ExternalLink size={14} />
             </a>
           </div>
@@ -113,19 +135,19 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* COPYRIGHT & TOMBOL RAHASIA SUPER ADMIN */}
+        {/* COPYRIGHT & TOMBOL SUPER ADMIN BERSIH & JELAS */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <p>© 2024 TOKO FITNESS SURABAYA. All rights reserved.</p>
           
-          {/* PINTU RAHASIA ADMIN (Hanya berupa titik samar) */}
+          {/* TOMBOL SUPER ADMIN JELAS & ELEGAN */}
           <a 
             href="https://www.sanity.io/manage" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="opacity-20 hover:opacity-100 hover:text-red-500 transition-all p-2 cursor-pointer text-lg leading-none"
-            title="Admin Login"
+            className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-slate-700 shadow-sm"
           >
-            ●
+            <Lock size={12} />
+            Super Admin
           </a>
         </div>
       </div>
