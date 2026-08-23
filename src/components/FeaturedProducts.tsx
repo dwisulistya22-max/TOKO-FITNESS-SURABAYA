@@ -6,14 +6,14 @@ import { STORE_CONFIG } from '../data/config';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// LINK CADANGAN JIKA LINK DI SANITY MATI / KOSONG
+// LINK CADANGAN TOKO UTAMA
 const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// FUNGSI PEMBERSIH LINK OTOMATIS
+// FUNGSI PEMBERSIH LINK OTOMATIS (MENGEMBALIKAN STRING KOSONG JIKA TIDAK ADA LINK)
 const fixLink = (url: any) => {
-  if (!url || typeof url !== 'string') return SHOPEE_FALLBACK;
+  if (!url || typeof url !== 'string') return '';
   const link = url.trim();
-  if (!link) return SHOPEE_FALLBACK;
+  if (!link) return '';
 
   if (!link.startsWith('http://') && !link.startsWith('https://')) {
     return 'https://' + link;
@@ -33,7 +33,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [selected, setSelected] = useState<any>(null);
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [globalShopee, setGlobalShopee] = useState<string>(fixLink((STORE_CONFIG as any)?.shopee));
+  const [globalShopee, setGlobalShopee] = useState<string>(
+    fixLink((STORE_CONFIG as any)?.shopee) || SHOPEE_FALLBACK
+  );
 
   const fetchProductsAndStore = async () => {
     setLoading(true);
@@ -65,7 +67,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         if (!foundShopee && fbLink && (fbLink.includes('sh.ee') || fbLink.includes('shopee'))) {
           foundShopee = fbLink;
         }
-        if (foundShopee) setGlobalShopee(fixLink(foundShopee));
+        if (foundShopee) setGlobalShopee(fixLink(foundShopee) || SHOPEE_FALLBACK);
 
         const prodRes = await fetch(
           `https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${productQuery}`,
@@ -87,6 +89,10 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
               }
 
+              // Kunci Perubahan: HANYA pakai link khusus produk ini.
+              // Jika di Sanity tidak diisi, hasilnya string kosong "".
+              const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
+
               return {
                 id: item._id,
                 name: item.name || 'Produk Fitness',
@@ -98,7 +104,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 reviews: item.reviews || 0,
                 images: allImages,
                 category: item.category || 'Umum',
-                shopeeUrl: fixLink(item.shopeeUrl || item.shopee || foundShopee || globalShopee)
+                shopeeUrl: itemShopeeLink // Jika kosong = ""
               };
             })
           );
@@ -159,6 +165,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   {selected.images.length > 1 && (
                     <>
                       <button
+                        type="button"
                         onClick={() =>
                           setActiveImgIndex((prev) =>
                             prev === 0 ? selected.images.length - 1 : prev - 1
@@ -170,6 +177,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                         <ChevronLeft size={20} />
                       </button>
                       <button
+                        type="button"
                         onClick={() =>
                           setActiveImgIndex((prev) =>
                             prev === selected.images.length - 1 ? 0 : prev + 1
@@ -244,14 +252,17 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     <ShoppingCart size={20} /> Pesan via WhatsApp
                   </a>
 
-                  <a
-                    href={selected.shopeeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-[#EE4D2D] hover:bg-[#d73211] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
-                  >
-                    🧡 Beli di Shopee Official <ExternalLink size={18} />
-                  </a>
+                  {/* Tombol Shopee di Modal Detail HANYA MUNCUL jika shopeeUrl ADA */}
+                  {selected.shopeeUrl && (
+                    <a
+                      href={selected.shopeeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#EE4D2D] hover:bg-[#d73211] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
+                    >
+                      🧡 Beli di Shopee Official <ExternalLink size={18} />
+                    </a>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -269,6 +280,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={fetchProductsAndStore}
               className="bg-gray-100 hover:bg-gray-200 px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
             >
@@ -339,14 +351,18 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   >
                     Detail & Galeri
                   </button>
-                  <a
-                    href={p.shopeeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
-                  >
-                    🧡 Beli di Shopee
-                  </a>
+
+                  {/* Tombol Shopee di Kartu HANYA MUNCUL jika shopeeUrl ADA */}
+                  {p.shopeeUrl && (
+                    <a
+                      href={p.shopeeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
+                    >
+                      🧡 Beli di Shopee
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
