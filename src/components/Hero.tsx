@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Sparkles } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
@@ -35,7 +35,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <section id="hero" className="relative min-h-[80vh] bg-black text-white flex items-center overflow-hidden py-16">
+    <section id="hero" className="relative min-h-[75vh] bg-black text-white flex items-center overflow-hidden py-12">
       {/* BACKGROUND IMAGE WITH ELEGANT DARK OVERLAY */}
       <div className="absolute inset-0 z-0">
         <img
@@ -48,74 +48,59 @@ const Hero = () => {
       </div>
 
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="max-w-3xl flex flex-col items-start text-left space-y-6">
+        <div className="max-w-4xl flex flex-col items-start text-left space-y-6">
           
-          {/* 1. BADGE "PROMO SETIAP HARI" */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-red-600 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg shadow-red-600/30 border border-red-500/40"
-          >
-            <Sparkles size={14} className="animate-pulse" />
-            "PROMO SETIAP HARI"
-          </motion.div>
-
-          {/* 2. LOGO RESMI TAMPIL EKSKLUSIF DI ATAS JUDUL */}
+          {/* 1. LOGO RESMI - DIPERBESAR */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.6 }}
             className="pt-2"
           >
             <img
               src={logoUrl}
               alt="Fitness Surabaya Official Logo"
-              className="h-20 sm:h-28 w-auto object-contain rounded-2xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
+              className="h-32 sm:h-44 lg:h-52 w-auto object-contain rounded-2xl drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)]"
               onError={(e: any) => {
                 e.target.src = '/logo.png';
               }}
             />
           </motion.div>
 
-          {/* 3. TULISAN JUDUL UTAMA */}
+          {/* 2. TULISAN JUDUL UTAMA - DIPERKECIL & RAPI */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tighter italic leading-[1.05] text-white"
+            className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight italic leading-tight text-white"
           >
-            Kualitas Gym <br className="hidden sm:inline" />
+            Kualitas Gym{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-orange-500">
               Profesional
             </span>{' '}
             Di Rumah Anda
           </motion.h1>
 
-          {/* 4. DESKRIPSI SINGKAT */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-gray-300 text-sm sm:text-lg max-w-2xl leading-relaxed font-normal"
-          >
-            Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Garansi resmi, siap kirim & pasang langsung di rumah Anda.
-          </motion.p>
-
-          {/* 5. JAMINAN KUALITAS & GARANSI */}
+          {/* 3. DESKRIPSI & GARANSI DITARUH SEJAJAR DI BAGIAN BAWAH */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="flex items-center gap-6 pt-6 text-xs sm:text-sm text-gray-300 border-t border-gray-800/80 w-full"
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-gray-800/80 w-full"
           >
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={18} className="text-red-500" />
-              <span>Garansi Resmi 1-3 Tahun</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={18} className="text-red-500" />
-              <span>Bisa COD & Pasang Onsite</span>
+            <p className="text-gray-400 text-xs sm:text-sm max-w-md leading-relaxed font-normal">
+              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Siap kirim & pasang langsung di rumah Anda.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-200">
+              <div className="flex items-center gap-1.5 bg-gray-900/80 px-3 py-2 rounded-xl border border-gray-800 shadow-md">
+                <ShieldCheck size={16} className="text-red-500 shrink-0" />
+                <span>Garansi Resmi 1-3 Tahun</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-gray-900/80 px-3 py-2 rounded-xl border border-gray-800 shadow-md">
+                <ShieldCheck size={16} className="text-red-500 shrink-0" />
+                <span>Bisa COD & Pasang Onsite</span>
+              </div>
             </div>
           </motion.div>
 
