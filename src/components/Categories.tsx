@@ -4,19 +4,19 @@ import { ArrowRight } from 'lucide-react';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// KATEGORI DEFAULT JIKA SANITY KOSONG (URUTAN BISA DIATUR DI SINI)
+// GAMBAR CADANGAN HANYA JIKA DI SANITY BENAR-BENAR TIDAK ADA GAMBAR
 const DEFAULT_CATEGORIES = [
   {
     id: '1',
     title: 'Cardio',
-    description: 'Koleksi peralatan fitness kardio (cardiovascular training) terlengkap.',
+    description: 'Koleksi peralatan fitness kardio terlengkap.',
     image: 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?q=80&w=800',
     order: 1
   },
   {
     id: '2',
     title: 'Commercial Use Fitness',
-    description: 'Mesin dan alat olahraga kelas berat untuk gym komersial & profesional.',
+    description: 'Mesin dan alat olahraga kelas berat untuk gym komersial.',
     image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800',
     order: 2
   },
@@ -33,13 +33,6 @@ const DEFAULT_CATEGORIES = [
     description: 'Maksimalkan setiap sesi latihanmu di rumah maupun di gym.',
     image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?q=80&w=800',
     order: 4
-  },
-  {
-    id: '5',
-    title: 'Outdoor Fitness Equipment',
-    description: 'Peralatan fitness luar ruangan tahan cuaca dengan standar keamanan tinggi.',
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=800',
-    order: 5
   }
 ];
 
@@ -49,45 +42,53 @@ const Categories = ({ onSelectCategory }: any) => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      // GROQ Query: Mengurutkan berdasarkan 'order' asc, lalu '_createdAt' asc
-      const query = encodeURIComponent(`*[_type in ["category", "kategori"]] | order(coalesce(order, sortOrder, 99) asc, _createdAt asc) {
+      // GROQ Query cerdas: Mengecek semua kemungkinan nama field gambar & urutan di Sanity
+      const query = encodeURIComponent(`*[_type in ["category", "kategori"]] {
         _id,
         "title": coalesce(title, name, nama, ""),
         "description": coalesce(description, deskripsi, ""),
-        "order": coalesce(order, sortOrder, 99),
-        "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, "")
+        "order": coalesce(order, sortOrder, urutan, 99),
+        "image": coalesce(
+          image.asset->url, 
+          foto.asset->url, 
+          photo.asset->url, 
+          gambar.asset->url, 
+          cover.asset->url,
+          bgImage.asset->url,
+          ""
+        )
       }`);
 
-      let fetchedData: any[] = [];
+      // Tambahkan timestamp (_t) agar browser TIDAK MENSIMPAN CACHE lama
+      const cacheBuster = `&_t=${Date.now()}`;
 
       for (const id of PROJECT_IDS) {
         try {
-          const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`, { cache: 'no-store' });
+          const res = await fetch(
+            `https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}${cacheBuster}`,
+            { cache: 'no-store' }
+          );
           const data = await res.json();
 
           if (data?.result?.length) {
-            fetchedData = data.result.map((item: any, index: number) => ({
+            const formatted = data.result.map((item: any, idx: number) => ({
               id: item._id,
               title: item.title || 'Kategori',
               description: item.description || 'Peralatan fitness berkualitas.',
-              order: item.order !== undefined ? item.order : index + 1,
-              image: item.image || DEFAULT_CATEGORIES[index % DEFAULT_CATEGORIES.length]?.image
+              order: Number(item.order !== undefined ? item.order : idx + 1),
+              image: item.image || DEFAULT_CATEGORIES[idx % DEFAULT_CATEGORIES.length]?.image
             }));
+
+            // URUTKAN BERDASARKAN ANGKA 'ORDER'
+            formatted.sort((a: any, b: any) => a.order - b.order);
+
+            setCategories(formatted);
             break;
           }
         } catch (err) {
           console.error('Error fetching categories:', err);
         }
       }
-
-      if (fetchedData.length > 0) {
-        // Sort ulang di Frontend berdasarkan field 'order'
-        fetchedData.sort((a, b) => a.order - b.order);
-        setCategories(fetchedData);
-      } else {
-        setCategories(DEFAULT_CATEGORIES);
-      }
-
       setLoading(false);
     };
 
@@ -95,9 +96,7 @@ const Categories = ({ onSelectCategory }: any) => {
   }, []);
 
   const handleCategoryClick = (title: string) => {
-    if (onSelectCategory) {
-      onSelectCategory(title);
-    }
+    if (onSelectCategory) onSelectCategory(title);
     const productSection = document.getElementById('products');
     if (productSection) {
       productSection.scrollIntoView({ behavior: 'smooth' });
@@ -107,7 +106,7 @@ const Categories = ({ onSelectCategory }: any) => {
   if (loading) {
     return (
       <div className="py-12 text-center text-gray-400 font-bold animate-pulse">
-        ⏳ Memuat Kategori...
+        ⏳ Memuat Kategori Terbaru...
       </div>
     );
   }
@@ -129,17 +128,17 @@ const Categories = ({ onSelectCategory }: any) => {
               onClick={() => handleCategoryClick(cat.title)}
               className="group relative h-96 rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 flex flex-col justify-end p-6"
             >
-              {/* Background Image */}
+              {/* Gambar dari Sanity */}
               <img
                 src={cat.image}
                 alt={cat.title}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
 
-              {/* Gradient Overlay */}
+              {/* Overlay Hitam Transparan */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent group-hover:from-black/95 transition-all duration-300" />
 
-              {/* Content */}
+              {/* Konten Teks */}
               <div className="relative z-10">
                 <h3 className="text-2xl font-black text-white mb-2 leading-tight group-hover:text-red-500 transition-colors">
                   {cat.title}
