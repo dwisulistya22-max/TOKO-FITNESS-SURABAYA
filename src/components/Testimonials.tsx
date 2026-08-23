@@ -1,65 +1,8 @@
-import { useState, useEffect } from 'react';
 import { Star, Quote } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
-const DATASET = 'production';
-const SANITY_URL = (id: string) => `https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=`;
-
-const DEFAULT_REVIEWS = [
-  {
-    name: "Budi Santoso",
-    role: "Pemilik Gym Local",
-    content: "Pelayanan Fitness Surabaya sangat memuaskan. Pengiriman cepat dan teknisinya sangat ahli dalam instalasi alat-alat berat.",
-    rating: 5,
-    image: "https://i.pravatar.cc/150?u=budi"
-  },
-  {
-    name: "Siska Amelia",
-    role: "Ibu Rumah Tangga",
-    content: "Beli Treadmill di sini garansinya jelas. Sudah pakai 1 tahun masih awet dan lancar. Sangat membantu program diet saya!",
-    rating: 5,
-    image: "https://i.pravatar.cc/150?u=siska"
-  },
-  {
-    name: "dr. Andi Wijaya",
-    role: "Personal Trainer",
-    content: "Rekomendasi terbaik untuk alat fitness berkualitas di Jawa Timur. Barangnya ori dan harganya sangat kompetitif.",
-    rating: 5,
-    image: "https://i.pravatar.cc/150?u=andi"
-  }
-];
+import { TESTIMONIALS } from '../data/config';
 
 const Testimonials = () => {
-  const [reviews, setReviews] = useState<any[]>(DEFAULT_REVIEWS);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchReviews = async () => {
-      setLoading(true);
-      const query = encodeURIComponent(`*[_type == "testimonial"] | order(_createdAt desc) {
-        name, role, content, rating,
-        "image": coalesce(image.asset->url, "https://i.pravatar.cc/150")
-      }`);
-
-      for (const id of PROJECT_IDS) {
-        try {
-          const res = await fetch(SANITY_URL(id) + query, { cache: 'no-store' });
-          const data = await res.json();
-          if (data?.result && data.result.length > 0) {
-            setReviews(data.result);
-            break;
-          }
-        } catch (err) {
-          console.error("Gagal ambil testimoni:", err);
-        }
-      }
-      setLoading(false);
-    };
-
-    fetchReviews();
-  }, []);
-
   return (
     <section className="py-24 bg-[#0f172a] text-white overflow-hidden" id="tentang">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,7 +19,7 @@ const Testimonials = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {reviews.map((item, idx) => (
+          {TESTIMONIALS.map((item, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -111,9 +54,6 @@ const Testimonials = () => {
           ))}
         </div>
 
-        {loading && (
-          <p className="text-center mt-8 text-slate-500 animate-pulse">Menghubungkan testimoni terbaru...</p>
-        )}
       </div>
     </section>
   );
