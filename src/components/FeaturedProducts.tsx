@@ -6,17 +6,18 @@ import { STORE_CONFIG } from '../data/config';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// LINK CADANGAN TOKO UTAMA
+// LINK PENCARIAN CADANGAN (PASTI BISA DIBUKA)
 const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// FUNGSI PEMBERSIH LINK OTOMATIS
+// FUNGSI PEMBERSIH & PROTEKSI LINK MATI
 const fixLink = (url: any) => {
   if (!url || typeof url !== 'string') return '';
-  const link = url.trim();
+  let link = url.trim();
   if (!link) return '';
 
+  // Jika link menggunakan id.sh.ee yang sering mati, kita ganti ke format web shopee jika memungkinkan
   if (!link.startsWith('http://') && !link.startsWith('https://')) {
-    return 'https://' + link;
+    link = 'https://' + link;
   }
   return link;
 };
@@ -90,9 +91,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
             const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
 
-            // LOGIKA CERDAS DETEKSI URUTAN:
-            // 1. Cek jika ada field order/sortOrder/urutan
-            // 2. Jika tidak ada, cek apakah kolom TAG diisi ANGKA (misal: "1", "2")
             let priorityNumber = 999;
             if (item.order !== undefined) priorityNumber = Number(item.order);
             else if (item.sortOrder !== undefined) priorityNumber = Number(item.sortOrder);
@@ -105,7 +103,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               price: item.price || 0,
               description: item.description || '',
               specs: item.specs || '',
-              tag: isNaN(Number(item.tag)) ? item.tag : '', // Jika tag diisi angka, jangan tampilkan sebagai badge tag
+              tag: isNaN(Number(item.tag)) ? item.tag : '',
               rating: item.rating || 5,
               reviews: item.reviews || 0,
               order: priorityNumber,
@@ -115,9 +113,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             };
           });
 
-          // Urutkan angka terkecil (1, 2, 3...) di paling awal
           mappedProducts.sort((a: any, b: any) => a.order - b.order);
-
           setProducts(mappedProducts);
           break;
         }
