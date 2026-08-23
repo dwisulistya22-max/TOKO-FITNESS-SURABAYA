@@ -1,23 +1,21 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
-
-// LINK PENCARIAN CADANGAN (PASTI BISA DIBUKA)
 const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// FUNGSI PEMBERSIH & PROTEKSI LINK MATI
+// BATAS PRODUK YANG DITAMPILKAN DI HALAMAN UTAMA (MISAL: 8 PRODUK)
+const INITIAL_DISPLAY_LIMIT = 8;
+
 const fixLink = (url: any) => {
   if (!url || typeof url !== 'string') return '';
-  let link = url.trim();
+  const link = url.trim();
   if (!link) return '';
-
-  // Jika link menggunakan id.sh.ee yang sering mati, kita ganti ke format web shopee jika memungkinkan
   if (!link.startsWith('http://') && !link.startsWith('https://')) {
-    link = 'https://' + link;
+    return 'https://' + link;
   }
   return link;
 };
@@ -34,6 +32,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [selected, setSelected] = useState<any>(null);
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false); // State untuk buka/tutup semua produk
   const [globalShopee, setGlobalShopee] = useState<string>(
     fixLink((STORE_CONFIG as any)?.shopee) || SHOPEE_FALLBACK
   );
@@ -128,17 +127,31 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     fetchProductsAndStore();
   }, []);
 
+  // Reset status pembatasan ketika kategori berubah
+  useEffect(() => {
+    setShowAll(false);
+  }, [activeCategory]);
+
   const openDetail = (product: any) => {
     setSelected(product);
     setActiveImgIndex(0);
   };
 
+  // Filter Kategori
   const filtered =
     !activeCategory || activeCategory === 'Semua'
       ? products
       : products.filter(
           (p) => String(p.category).toLowerCase() === String(activeCategory).toLowerCase()
         );
+
+  // LOGIKA PEMBATASAN PRODUK:
+  // Jika di tab "Semua" dan showAll = false, sembunyikan sisanya.
+  // Jika memilih kategori spesifik (Cardio dll), tampilkan SEMUA produk kategori itu.
+  const displayProducts =
+    activeCategory === 'Semua' && !showAll
+      ? filtered.slice(0, INITIAL_DISPLAY_LIMIT)
+      : filtered;
 
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
@@ -278,9 +291,13 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
           <div>
             <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 uppercase tracking-tighter italic">
-              Produk Unggulan
+              Produk Pilihan
             </h2>
-            <p className="text-gray-500">Kualitas Gym Profesional kini hadir di rumah Anda.</p>
+            <p className="text-gray-500">
+              {activeCategory === 'Semua'
+                ? 'Menampilkan koleksi peralatan fitness unggulan.'
+                : `Menampilkan koleksi kategori ${activeCategory}`}
+            </p>
           </div>
           <div className="flex gap-2">
             <button
@@ -306,70 +323,94 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             ⏳ Menghubungkan ke Sanity Studio...
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filtered.map((p: any) => (
-              <div
-                key={p.id}
-                className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                    <img
-                      src={p.images[0]}
-                      alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    {p.tag && (
-                      <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
-                        {p.tag}
-                      </span>
-                    )}
-                    {p.images.length > 1 && (
-                      <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md">
-                        📷 {p.images.length} FOTO
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <div className="text-[10px] text-red-600 font-bold uppercase mb-1">
-                      {p.category}
+          <>
+            {/* GRID PRODUK TERBATAS / SESUAI KATEGORI */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {displayProducts.map((p: any) => (
+                <div
+                  key={p.id}
+                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                      <img
+                        src={p.images[0]}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      {p.tag && (
+                        <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
+                          {p.tag}
+                        </span>
+                      )}
+                      {p.images.length > 1 && (
+                        <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md">
+                          📷 {p.images.length} FOTO
+                        </span>
+                      )}
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight h-10">
-                      {p.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-yellow-400 mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={12} fill={i < (p.rating || 5) ? 'currentColor' : 'none'} />
-                      ))}
-                      <span className="text-gray-400 text-[10px] ml-1">({p.reviews || '12+'})</span>
+                    <div className="p-6">
+                      <div className="text-[10px] text-red-600 font-bold uppercase mb-1">
+                        {p.category}
+                      </div>
+                      <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight h-10">
+                        {p.name}
+                      </h3>
+                      <div className="flex items-center gap-1 text-yellow-400 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={12} fill={i < (p.rating || 5) ? 'currentColor' : 'none'} />
+                        ))}
+                        <span className="text-gray-400 text-[10px] ml-1">({p.reviews || '12+'})</span>
+                      </div>
+                      <div className="text-xl font-black text-red-600">{formatPrice(p.price)}</div>
                     </div>
-                    <div className="text-xl font-black text-red-600">{formatPrice(p.price)}</div>
                   </div>
-                </div>
 
-                <div className="p-6 pt-0 space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => openDetail(p)}
-                    className="w-full bg-gray-900 hover:bg-red-600 text-white py-3 rounded-xl text-xs font-bold transition-all"
-                  >
-                    Detail & Galeri
-                  </button>
-
-                  {p.shopeeUrl && (
-                    <a
-                      href={p.shopeeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
+                  <div className="p-6 pt-0 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => openDetail(p)}
+                      className="w-full bg-gray-900 hover:bg-red-600 text-white py-3 rounded-xl text-xs font-bold transition-all"
                     >
-                      🧡 Beli di Shopee
-                    </a>
-                  )}
+                      Detail & Galeri
+                    </button>
+
+                    {p.shopeeUrl && (
+                      <a
+                        href={p.shopeeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
+                      >
+                        🧡 Beli di Shopee
+                      </a>
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* TOMBOL BUKA / TUTUP SELURUH PRODUK (HANYA MUNCUL JIKA LEBIH DARI LIMIT) */}
+            {activeCategory === 'Semua' && filtered.length > INITIAL_DISPLAY_LIMIT && (
+              <div className="text-center mt-12">
+                <button
+                  type="button"
+                  onClick={() => setShowAll(!showAll)}
+                  className="inline-flex items-center gap-2 bg-gray-900 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-xl hover:shadow-red-600/30 transform hover:-translate-y-0.5"
+                >
+                  {showAll ? (
+                    <>
+                      Sembunyikan Sebagian Produk <ChevronUp size={18} />
+                    </>
+                  ) : (
+                    <>
+                      Lihat Semua Produk ({filtered.length} Barang) <ChevronDown size={18} />
+                    </>
+                  )}
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </section>
