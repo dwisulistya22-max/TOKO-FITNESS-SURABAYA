@@ -42,7 +42,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
       "facebook": coalesce(facebook, "")
     }`);
 
-    // Query cerdas: mengambil status featured / centang / tag unggulan
     const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
       _id, name, price, description, specs, tag, rating, reviews,
       shopeeUrl, shopee, order, sortOrder, urutan,
@@ -88,28 +87,27 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             }
 
             const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
+            const tagUpper = String(item.tag || '').toUpperCase().trim();
 
-            // LOGIKA FILTER DIPILIH UNTUK HALAMAN MUKA:
-            // 1. Cek tombol sakelar / boolean (isFeatured, showOnHome, dll)
-            // 2. ATAU Cek jika kolom Tag diisi kata "UNGGULAN" / "FEATURED"
-            // 3. ATAU Cek jika kolom Order diisi angka <= 8
-            const isMarkedFeatured = Boolean(
+            // SAKELAR FILTER KHUSUS ADMIN (HANYA YANG DITANDAI DENGAN KATA/ANGKA INI DITAMPILKAN DI HALAMAN MUKA)
+            const isExplicitlyChosenByAdmin = Boolean(
               item.isFeatured ||
               item.featured ||
               item.isUnggulan ||
               item.showOnHome ||
               item.showHomepage ||
-              (item.tag && String(item.tag).toUpperCase().includes('UNGGULAN')) ||
-              (item.tag && String(item.tag).toUpperCase().includes('FEATURED')) ||
-              (item.order !== undefined && Number(item.order) <= 8) ||
-              (item.sortOrder !== undefined && Number(item.sortOrder) <= 8)
+              tagUpper === 'UNGGULAN' ||
+              tagUpper === 'UTAMA' ||
+              tagUpper === 'DEPAN' ||
+              tagUpper === 'MUKA' ||
+              tagUpper === 'FEATURED' ||
+              (!isNaN(Number(tagUpper)) && Number(tagUpper) > 0 && Number(tagUpper) <= 50) ||
+              (item.order !== undefined && Number(item.order) > 0 && Number(item.order) <= 50)
             );
 
             let priorityNumber = 999;
             if (item.order !== undefined) priorityNumber = Number(item.order);
-            else if (item.sortOrder !== undefined) priorityNumber = Number(item.sortOrder);
-            else if (item.urutan !== undefined) priorityNumber = Number(item.urutan);
-            else if (item.tag && !isNaN(Number(item.tag))) priorityNumber = Number(item.tag);
+            else if (!isNaN(Number(tagUpper)) && Number(tagUpper) > 0) priorityNumber = Number(tagUpper);
 
             return {
               id: item._id,
@@ -121,7 +119,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               rating: item.rating || 5,
               reviews: item.reviews || 0,
               order: priorityNumber,
-              isFeatured: isMarkedFeatured, // Status Pilihan Halaman Muka
+              isFeatured: isExplicitlyChosenByAdmin, // Tandai barang pilihan Admin
               images: allImages,
               category: item.category || 'Umum',
               shopeeUrl: itemShopeeLink
@@ -152,26 +150,36 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     setActiveImgIndex(0);
   };
 
-  // 1. Filter Kategori Terlebih Dahulu
-  const filteredByCategory =
+  // Filter Kategori
+  const categoryProducts =
     !activeCategory || activeCategory === 'Semua'
       ? products
       : products.filter(
           (p) => String(p.category).toLowerCase() === String(activeCategory).toLowerCase()
         );
 
-  // 2. Filter Produk yang Tampil di Halaman Muka (Tab "Semua")
-  const featuredOnly = filteredByCategory.filter((p) => p.isFeatured);
+  // Hanya ambil produk yang DIPILIH ADMIN untuk Halaman Depan
+  const adminSelectedProducts = products.filter((p) => p.isFeatured);
 
-  // Jika tidak ada satu pun produk yang ditandai, tampilkan 8 produk pertama sebagai cadangan
-  const defaultHomepageProducts =
-    featuredOnly.length > 0 ? featuredOnly : filteredByCategory.slice(0, 8);
+  // Tentukan barang yang dirender di layar:
+  let displayProducts: any[] = [];
 
-  // 3. Tentukan produk akhir yang akan di-render di layar
-  const displayProducts =
-    activeCategory === 'Semua' && !showAll
-      ? defaultHomepageProducts
-      : filteredByCategory;
+  if (activeCategory === 'Semua') {
+    if (showAll) {
+      // Jika tombol "Lihat Semua" diklik, tampilkan seluruh barang
+      displayProducts = products;
+    } else {
+      // Jika belum diklik, TAMPILKAN HANYA BARANG PILIHAN ADMIN.
+      // (Jika Admin belum menandai barang sama sekali, tampilkan 4 barang pertama sebagai contoh sementara)
+      displayProducts =
+        adminSelectedProducts.length > 0
+          ? adminSelectedProducts
+          : products.slice(0, 4);
+    }
+  } else {
+    // Jika memilih Kategori tertentu (Cardio, Aksesoris, dll) -> Tampilkan SEMUA barang kategori tersebut
+    displayProducts = categoryProducts;
+  }
 
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
@@ -315,7 +323,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             </h2>
             <p className="text-gray-500">
               {activeCategory === 'Semua'
-                ? 'Pilihan alat fitness rekomendasi terbaik untuk Anda.'
+                ? 'Rekomendasi peralatan fitness pilihan terbaik.'
                 : `Koleksi lengkap kategori ${activeCategory}`}
             </p>
           </div>
@@ -409,8 +417,8 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               ))}
             </div>
 
-            {/* TOMBOL LIHAT SEMUA PRODUK */}
-            {activeCategory === 'Semua' && filteredByCategory.length > displayProducts.length && (
+            {/* TOMBOL LIHAT SEMUA KATALOG (HANYA MUNCUL DI TAB SEMUA) */}
+            {activeCategory === 'Semua' && products.length > displayProducts.length && (
               <div className="text-center mt-12">
                 <button
                   type="button"
@@ -423,7 +431,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     </>
                   ) : (
                     <>
-                      Lihat Semua Katalog Produk ({filteredByCategory.length} Barang) <ChevronDown size={18} />
+                      Lihat Semua Katalog Produk ({products.length} Barang) <ChevronDown size={18} />
                     </>
                   )}
                 </button>
