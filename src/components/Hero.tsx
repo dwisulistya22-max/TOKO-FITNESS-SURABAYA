@@ -4,14 +4,29 @@ import { motion } from 'framer-motion';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
+const DEFAULT_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920';
 
 const Hero = () => {
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
+  const [bgUrl, setBgUrl] = useState<string>(DEFAULT_BG);
 
   useEffect(() => {
-    const fetchHeroLogo = async () => {
-      const query = encodeURIComponent(`*[_type in ["storeConfig","storeInfo","settings"]][0]{
-        "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
+    const fetchHeroData = async () => {
+      // Query untuk mengambil Logo Toko & Gambar Background dari Slider/Banner Sanity
+      const query = encodeURIComponent(`{
+        "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
+          "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
+        },
+        "banner": *[_type in ["slider", "banner", "hero"]][0]{
+          "bgImage": coalesce(
+            image.asset->url, 
+            gambar.asset->url, 
+            photo.asset->url, 
+            foto.asset->url,
+            bannerImage.asset->url,
+            ""
+          )
+        }
       }`);
 
       for (const id of PROJECT_IDS) {
@@ -21,27 +36,36 @@ const Hero = () => {
             { cache: 'no-store' }
           );
           const data = await res.json();
-          if (data?.result?.logo) {
-            setLogoUrl(data.result.logo);
+
+          if (data?.result) {
+            if (data.result.store?.logo) {
+              setLogoUrl(data.result.store.logo);
+            }
+            if (data.result.banner?.bgImage) {
+              setBgUrl(data.result.banner.bgImage);
+            }
             break;
           }
         } catch (err) {
-          console.error('Error fetching hero logo:', err);
+          console.error('Error fetching hero data:', err);
         }
       }
     };
 
-    fetchHeroLogo();
+    fetchHeroData();
   }, []);
 
   return (
     <section id="hero" className="relative min-h-[75vh] bg-black text-white flex items-center overflow-hidden py-12">
-      {/* BACKGROUND IMAGE WITH ELEGANT DARK OVERLAY */}
+      {/* GAMBAR BACKGROUND DINAMIS DARI SANITY */}
       <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920"
+          src={bgUrl}
           alt="Gym Background"
-          className="w-full h-full object-cover object-center opacity-30 scale-105 transform transition-transform duration-1000"
+          className="w-full h-full object-cover object-center opacity-40 scale-105 transform transition-transform duration-1000"
+          onError={(e: any) => {
+            e.target.src = DEFAULT_BG;
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60 z-10" />
@@ -67,7 +91,7 @@ const Hero = () => {
             />
           </motion.div>
 
-          {/* 2. TULISAN JUDUL UTAMA - DIPERKECIL & RAPI */}
+          {/* 2. TULISAN JUDUL UTAMA */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
