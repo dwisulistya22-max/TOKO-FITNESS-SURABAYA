@@ -6,8 +6,8 @@ import { STORE_CONFIG } from '../data/config';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// 🎯 LINK LANGSUNG TOKO ANDA (TIDAK AKAN NYASAR KE TOKO LAIN)
-const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/toko_fitness_surabaya';
+// 🎯 LINK PASTI TOKO SHOPEE ANDA
+const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/search?keyword=toko%20fitness';
 const HOMEPAGE_LIMIT = 8;
 
 const formatPrice = (price: number) =>
