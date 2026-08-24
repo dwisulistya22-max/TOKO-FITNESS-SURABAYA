@@ -11,6 +11,10 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   const [mobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
 
+  // STATE UNTUK KONTROL PROMO DARI SANITY
+  const [promoText, setPromoText] = useState<string>('PROMO SETIAP HARI');
+  const [showPromo, setShowPromo] = useState<boolean>(true);
+
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
   useEffect(() => {
@@ -26,25 +30,49 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   }, []);
 
   useEffect(() => {
-    const fetchLogo = async () => {
-      const query = encodeURIComponent(`*[_type in ["storeConfig","storeInfo","settings"]][0]{
-        "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
+    const fetchNavbarData = async () => {
+      // Query membaca Logo & Pengaturan Promo dari Sanity
+      const query = encodeURIComponent(`{
+        "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
+          "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
+        },
+        "promo": *[_type in ["storeConfig","storeInfo","settings","slider","banner"]][0]{
+          "tag": coalesce(promoText, tagPromo, promoTag, tag, ""),
+          "disable": coalesce(disablePromo, hidePromo, false)
+        }
       }`);
 
       for (const id of PROJECT_IDS) {
         try {
-          const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`);
+          const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`, { cache: 'no-store' });
           const data = await res.json();
-          if (data?.result?.logo) {
-            setLogoUrl(data.result.logo);
+          
+          if (data?.result) {
+            // Update Logo
+            if (data.result.store?.logo) {
+              setLogoUrl(data.result.store.logo);
+            }
+
+            // Update Status Promo
+            const rawTag = data.result.promo?.tag;
+            const isDisabled = data.result.promo?.disable;
+
+            if (isDisabled || rawTag === null || rawTag === undefined || String(rawTag).trim() === '') {
+              // JIKA DI SANITY KOSONG / DISABLED -> MATIKAN BADGE PROMO
+              setShowPromo(false);
+            } else {
+              // JIKA TERISI -> TAMPILKAN BADGE PROMO
+              setShowPromo(true);
+              setPromoText(String(rawTag).trim());
+            }
             break;
           }
         } catch (err) {
-          console.error(err);
+          console.error('Error fetching navbar data:', err);
         }
       }
     };
-    fetchLogo();
+    fetchNavbarData();
   }, []);
 
   return (
@@ -78,7 +106,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
             <a href="#footer" className="hover:text-red-600 transition-colors">Tentang Kami</a>
           </nav>
 
-          {/* SISI KANAN: HUBUNGI KAMI + BADGE "PROMO SETIAP HARI" CETAR */}
+          {/* SISI KANAN: HUBUNGI KAMI + BADGE PROMO DINAMIS */}
           <div className="flex items-center gap-3">
             
             {/* SEARCH & CART */}
@@ -110,38 +138,39 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 <Phone size={15} /> Hubungi Kami
               </a>
 
-              {/* 🔥 BADGE "PROMO SETIAP HARI" MODE LEDAKAN / CETAR 🔥 */}
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{
-                  scale: [1, 1.12, 1],
-                  boxShadow: [
-                    "0px 0px 0px rgba(239, 68, 68, 0)",
-                    "0px 0px 18px rgba(239, 68, 68, 0.9)",
-                    "0px 0px 0px rgba(239, 68, 68, 0)"
-                  ]
-                }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 1.2,
-                  ease: "easeInOut"
-                }}
-                className="absolute top-full mt-1.5 right-0 z-30 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-red-600 to-amber-500 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 border-yellow-300 whitespace-nowrap cursor-pointer"
-                onClick={() => {
-                  const productSection = document.getElementById('products');
-                  if (productSection) productSection.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                {/* EFEK PING LEDAKAN DITAMBAHKAN */}
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-90"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
-                </span>
-                
-                <Flame size={13} className="text-yellow-300 animate-bounce" />
-                <span>"PROMO SETIAP HARI"</span>
-                <Sparkles size={12} className="text-yellow-200" />
-              </motion.div>
+              {/* 🔥 BADGE "PROMO SETIAP HARI" HANYA MUNCUL JIKA AKTIF DI SANITY 🔥 */}
+              {showPromo && (
+                <motion.div
+                  initial={{ scale: 0.9 }}
+                  animate={{
+                    scale: [1, 1.12, 1],
+                    boxShadow: [
+                      "0px 0px 0px rgba(239, 68, 68, 0)",
+                      "0px 0px 18px rgba(239, 68, 68, 0.9)",
+                      "0px 0px 0px rgba(239, 68, 68, 0)"
+                    ]
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 1.2,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute top-full mt-1.5 right-0 z-30 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-red-600 to-amber-500 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 border-yellow-300 whitespace-nowrap cursor-pointer"
+                  onClick={() => {
+                    const productSection = document.getElementById('products');
+                    if (productSection) productSection.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-90"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
+                  </span>
+                  
+                  <Flame size={13} className="text-yellow-300 animate-bounce" />
+                  <span>"{promoText}"</span>
+                  <Sparkles size={12} className="text-yellow-200" />
+                </motion.div>
+              )}
 
             </div>
 
