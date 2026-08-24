@@ -1,103 +1,182 @@
 import { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Phone } from 'lucide-react';
+import { Phone, ShoppingCart, Search, Menu, X, Flame, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
-const SANITY_PROJECT_ID = 'qi4rocc0';
-const SANITY_DATASET = 'production';
-const SANITY_URL = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=`;
+const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
+const DATASET = 'production';
 
-export interface NavbarProps {
-  isAdmin?: boolean;
-  logo?: string;
-  onLogoChange?: (logo: string) => void;
-}
+const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
 
-const Navbar = (props: NavbarProps) => {
-  const [logoUrl, setLogoUrl] = useState<string>('');
-  const [phone, setPhone] = useState<string>(STORE_CONFIG.phone);
+  const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
   useEffect(() => {
-    const fetchStoreData = async () => {
-      try {
-        const query = encodeURIComponent(`*[_type in ["storeConfig", "storeInfo", "settings"]][0]{
-          "logo": logo.asset->url,
-          "phone": coalesce(phone, whatsapp, "")
-        }`);
-        const res = await fetch(`${SANITY_URL}${query}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (data?.result) {
-          if (data.result.logo) setLogoUrl(data.result.logo);
-          if (data.result.phone) setPhone(data.result.phone);
-        }
-      } catch (e) {
-        console.error(e);
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
       }
     };
-    fetchStoreData();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const activeLogo = props.logo || logoUrl || STORE_CONFIG.logo;
-  const safePhone = phone || STORE_CONFIG.phone || '6281235907956';
-  const firstPhone = safePhone.split(/[/,&\n]/)[0]?.replace(/\D/g, '') || '6281235907956';
+  useEffect(() => {
+    const fetchLogo = async () => {
+      const query = encodeURIComponent(`*[_type in ["storeConfig","storeInfo","settings"]][0]{
+        "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
+      }`);
 
-  const scrollToProducts = () => {
-    const el = document.getElementById('products');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
+      for (const id of PROJECT_IDS) {
+        try {
+          const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`);
+          const data = await res.json();
+          if (data?.result?.logo) {
+            setLogoUrl(data.result.logo);
+            break;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    };
+    fetchLogo();
+  }, []);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm antialiased">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        
-        {/* LOGO KOTAK KIRI (KONSISTEN PERSIS DENGAN HERO) */}
-        <a href="#beranda" className="flex items-center shrink-0">
-          <div className="w-16 h-16 bg-black rounded-lg overflow-hidden border border-gray-800 shadow-md flex items-center justify-center">
-            {activeLogo ? (
-              <img
-                src={activeLogo}
-                alt="FS Fitness Surabaya"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white font-black text-xl">FS</span>
-            )}
-          </div>
-        </a>
-
-        {/* MENU TENGAH - FONT LEMBUT & BERSIH */}
-        <div className="hidden md:flex items-center gap-8 font-medium text-gray-700 text-base tracking-normal">
-          <a href="#beranda" className="hover:text-red-600 transition-colors">Beranda</a>
-          <a href="#products" className="hover:text-red-600 transition-colors">Produk</a>
-          <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
-          <a href="#tentang" className="hover:text-red-600 transition-colors">Tentang Kami</a>
-        </div>
-
-        {/* AKSI KANAN: CARI, TROLI, TOMBOL MERAH HUBUNGI KAMI */}
-        <div className="flex items-center gap-5">
-          <button onClick={scrollToProducts} className="text-gray-700 hover:text-red-600 transition-colors" title="Cari">
-            <Search size={20} />
-          </button>
-
-          <button onClick={scrollToProducts} className="relative text-gray-700 hover:text-red-600 transition-colors" title="Troli">
-            <ShoppingCart size={22} />
-            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-              0
-            </span>
-          </button>
-
-          <a
-            href={`https://wa.me/${firstPhone}?text=Halo%20Surabaya%20Fitness`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-[#e60000] hover:bg-red-700 text-white px-6 py-2.5 rounded-full font-medium text-sm flex items-center gap-2 shadow-md shadow-red-600/30 transition-all"
-          >
-            <Phone size={16} />
-            <span className="hidden sm:inline">Hubungi Kami</span>
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'bg-white py-3 border-b border-gray-100'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-4">
+          
+          {/* LOGO RESMI */}
+          <a href="#" className="flex items-center gap-3 group shrink-0">
+            <img
+              src={logoUrl}
+              alt="Logo"
+              className="h-10 w-10 sm:h-12 sm:w-12 object-contain rounded-xl bg-black p-1 transition-transform group-hover:scale-105"
+              onError={(e: any) => { e.target.src = '/logo.png'; }}
+            />
+            <div className="hidden sm:flex flex-col">
+              <span className="font-black text-base sm:text-lg tracking-tight italic text-gray-900 leading-none">
+                FITNESS SURABAYA
+              </span>
+              <span className="text-[9px] text-red-600 font-bold tracking-widest uppercase mt-0.5">
+                Official Equipment
+              </span>
+            </div>
           </a>
-        </div>
 
+          {/* MENU NAVIGASI UTAMA */}
+          <nav className="hidden md:flex items-center gap-8 font-bold text-sm text-gray-700">
+            <a href="#hero" className="hover:text-red-600 transition-colors">Beranda</a>
+            <a href="#products" onClick={() => onSelectCategory && onSelectCategory('Semua')} className="hover:text-red-600 transition-colors">Produk</a>
+            <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
+            <a href="#footer" className="hover:text-red-600 transition-colors">Tentang Kami</a>
+          </nav>
+
+          {/* SISI KANAN: HUBUNGI KAMI + BADGE "PROMO SETIAP HARI" CETAR */}
+          <div className="flex items-center gap-3">
+            
+            {/* SEARCH & CART */}
+            <a href="#products" className="p-2 text-gray-600 hover:text-red-600 transition-colors" title="Cari Produk">
+              <Search size={20} />
+            </a>
+
+            {onOpenCart && (
+              <button type="button" onClick={onOpenCart} className="relative p-2 text-gray-600 hover:text-red-600 transition-colors" title="Keranjang">
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* CONTAINER KHUSUS TOMBOL & BADGE LEDAKAN */}
+            <div className="relative flex flex-col items-end">
+              
+              {/* TOMBOL HUBUNGI KAMI */}
+              <a
+                href={`https://wa.me/${waNumber}?text=Halo%20Admin%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20konsultasi`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-full shadow-md flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95"
+              >
+                <Phone size={15} /> Hubungi Kami
+              </a>
+
+              {/* 🔥 BADGE "PROMO SETIAP HARI" MODE LEDAKAN / CETAR 🔥 */}
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{
+                  scale: [1, 1.12, 1],
+                  boxShadow: [
+                    "0px 0px 0px rgba(239, 68, 68, 0)",
+                    "0px 0px 18px rgba(239, 68, 68, 0.9)",
+                    "0px 0px 0px rgba(239, 68, 68, 0)"
+                  ]
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.2,
+                  ease: "easeInOut"
+                }}
+                className="absolute top-full mt-1.5 right-0 z-30 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-red-600 to-amber-500 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 border-yellow-300 whitespace-nowrap cursor-pointer"
+                onClick={() => {
+                  const productSection = document.getElementById('products');
+                  if (productSection) productSection.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                {/* EFEK PING LEDAKAN DITAMBAHKAN */}
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-90"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
+                </span>
+                
+                <Flame size={13} className="text-yellow-300 animate-bounce" />
+                <span>"PROMO SETIAP HARI"</span>
+                <Sparkles size={12} className="text-yellow-200" />
+              </motion.div>
+
+            </div>
+
+            {/* MOBILE MENU HAMBURGER */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-700 hover:text-red-600 ml-1"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+          </div>
+        </div>
       </div>
-    </nav>
+
+      {/* MOBILE MENU DROPDOWN */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-white border-b border-gray-100 overflow-hidden"
+          >
+            <div className="px-4 pt-3 pb-6 space-y-3 font-bold text-sm text-gray-800">
+              <a href="#hero" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Beranda</a>
+              <a href="#products" onClick={() => { setIsMobileMenuOpen(false); onSelectCategory && onSelectCategory('Semua'); }} className="block py-2 border-b border-gray-50">Produk</a>
+              <a href="#categories" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Kategori</a>
+              <a href="#footer" onClick={() => setIsMobileMenuOpen(false)} className="block py-2">Tentang Kami</a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
   );
 };
 
