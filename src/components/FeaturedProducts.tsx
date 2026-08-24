@@ -5,8 +5,9 @@ import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
-const SAFE_SHOPEE_URL = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
+// 🎯 LINK LANGSUNG TOKO ANDA (TIDAK AKAN NYASAR KE TOKO LAIN)
+const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/toko_fitness_surabaya';
 const HOMEPAGE_LIMIT = 8;
 
 const formatPrice = (price: number) =>
@@ -255,7 +256,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     <ShoppingCart size={20} /> Pesan via WhatsApp
                   </a>
 
-                  {/* LINK SHOPEE DI DALAM MODAL DETAIL (JIKA ADA) */}
                   {selected.shopeeUrl && selected.shopeeUrl.length > 5 && (
                     <a
                       href={selected.shopeeUrl}
@@ -294,7 +294,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               🔄 Refresh Data
             </button>
             <a
-              href={SAFE_SHOPEE_URL}
+              href={OFFICIAL_SHOPEE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-[#EE4D2D] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md hover:bg-[#d73211] transition-colors"
@@ -310,7 +310,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           </div>
         ) : (
           <>
-            {/* GRID PRODUK BERSIH RAPI (HANYA 1 TOMBOL BLACK "DETAIL & GALERI") */}
+            {/* GRID PRODUK RAPI DENGAN 1 TOMBOL BLACK "DETAIL & GALERI" */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {displayProducts.map((p: any) => (
                 <div
@@ -352,7 +352,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     </div>
                   </div>
 
-                  {/* KARTU PRODUK BERSIH: HANYA 1 TOMBOL HITAM ELEGAN */}
                   <div className="p-6 pt-0">
                     <button
                       type="button"
@@ -366,7 +365,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               ))}
             </div>
 
-            {/* TOMBOL BUKA / TUTUP SEMUA PRODUK */}
+            {/* TOMBOL BUKA / TUTUP KATALOG */}
             {activeCategory === 'Semua' && products.length > displayProducts.length && (
               <div className="text-center mt-12">
                 <button
