@@ -61,7 +61,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-[#0f172a] text-white pt-16 pb-8 border-t border-slate-800">
+    <footer id="footer" className="bg-[#0f172a] text-white pt-16 pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
           
@@ -111,35 +111,74 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* KOLOM 4: HUBUNGI KAMI */}
+          {/* KOLOM 4: HUBUNGI KAMI (SEMUA AKTIF & DAPAT DIKLIK) */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4">Hubungi Kami</h4>
-            <ul className="space-y-3 text-xs text-slate-400">
-              <li className="flex items-start gap-2.5">
-                <MapPin size={16} className="text-red-500 shrink-0 mt-0.5" />
-                <span>Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216</span>
+            <ul className="space-y-3.5 text-xs text-slate-400">
+              
+              {/* 1. LINK ALAMAT GOOGLE MAPS */}
+              <li>
+                <a
+                  href="https://maps.google.com/?q=Jl.+Kuwukan+Gg.+2+No.22,+Lontar,+Kec.+Sambikerep,+Surabaya"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2.5 hover:text-white transition-colors group"
+                >
+                  <MapPin size={16} className="text-red-500 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <span>Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216</span>
+                    <span className="text-red-500 font-bold block mt-1 underline group-hover:text-red-400">
+                      📍 Buka di Google Maps →
+                    </span>
+                  </div>
+                </a>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Phone size={16} className="text-red-500 shrink-0" />
-                <span>Admin 1: +6281332345448</span>
+
+              {/* 2. LINK WHATSAPP ADMIN 1 */}
+              <li>
+                <a
+                  href="https://wa.me/6281332345448?text=Halo%20Admin%201%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20bertanya"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 hover:text-green-400 transition-colors group"
+                >
+                  <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Admin 1: <strong className="text-white group-hover:text-green-400 underline">+6281332345448</strong></span>
+                </a>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Phone size={16} className="text-red-500 shrink-0" />
-                <span>Admin 2: +6281235907956</span>
+
+              {/* 3. LINK WHATSAPP ADMIN 2 */}
+              <li>
+                <a
+                  href="https://wa.me/6281235907956?text=Halo%20Admin%202%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20bertanya"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 hover:text-green-400 transition-colors group"
+                >
+                  <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Admin 2: <strong className="text-white group-hover:text-green-400 underline">+6281235907956</strong></span>
+                </a>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Mail size={16} className="text-red-500 shrink-0" />
-                <span>dwisulistya22@gmail.com</span>
+
+              {/* 4. LINK EMAIL */}
+              <li>
+                <a
+                  href="mailto:dwisulistya22@gmail.com?subject=Tanya%20Produk%20Toko%20Fitness%20Surabaya"
+                  className="flex items-center gap-2.5 hover:text-red-400 transition-colors group"
+                >
+                  <Mail size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="underline">dwisulistya22@gmail.com</span>
+                </a>
               </li>
+
             </ul>
           </div>
         </div>
 
-        {/* COPYRIGHT & TOMBOL SUPER ADMIN BERSIH & JELAS */}
+        {/* COPYRIGHT & TOMBOL SUPER ADMIN */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <p>© 2024 TOKO FITNESS SURABAYA. All rights reserved.</p>
           
-          {/* TOMBOL SUPER ADMIN JELAS & ELEGAN */}
           <a 
             href="https://www.sanity.io/manage" 
             target="_blank" 
