@@ -5,20 +5,8 @@ import { STORE_CONFIG } from '../data/config';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// 🎯 LINK PASTI TOKO SHOPEE ANDA
-const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/search?keyword=toko%20fitness';
-
-const cleanShopeeUrl = (url: any) => {
-  if (!url || typeof url !== 'string') return OFFICIAL_SHOPEE_URL;
-  const trimmed = url.trim();
-  if (trimmed.includes('id.sh.ee') || trimmed.length < 10) {
-    return OFFICIAL_SHOPEE_URL;
-  }
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-    return 'https://' + trimmed;
-  }
-  return trimmed;
-};
+// 🎯 LINK SHOPEE RESMI ANDA (SUDAH TERPASANG)
+const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 
 const Footer = () => {
   const [shopeeUrl, setShopeeUrl] = useState<string>(OFFICIAL_SHOPEE_URL);
@@ -44,13 +32,17 @@ const Footer = () => {
             if (storeData.logo) setLogoUrl(storeData.logo);
 
             const rawLink = storeData.shopee || storeData.facebook || '';
-            const cleaned = cleanShopeeUrl(rawLink);
-            setShopeeUrl(cleaned);
+            
+            // JIKA LINK DI SANITY VALID (BUKAN id.sh.ee), PAKAI DARI SANITY. 
+            // JIKA TIDAK, PAKAI LINK fitnesssurabaya LANGSUNG.
+            if (rawLink && rawLink.includes('shopee.co.id') && !rawLink.includes('id.sh.ee')) {
+               setShopeeUrl(rawLink.startsWith('http') ? rawLink : 'https://' + rawLink);
+            } else {
+              setShopeeUrl(OFFICIAL_SHOPEE_URL);
+            }
             break;
           }
-        } catch (err) { 
-          console.error('Error fetching footer data:', err); 
-        }
+        } catch (err) { console.error(err); }
       }
     };
     fetchFooterData();
@@ -61,122 +53,58 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
           
-          {/* KOLOM 1: LOGO & SHOPEE OFFICIAL */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <img 
-                src={logoUrl} 
-                alt="Logo Toko Fitness Surabaya" 
-                className="h-12 w-12 object-contain rounded-xl bg-white p-1" 
-                onError={(e: any) => { e.target.src = '/logo.png'; }}
-              />
+              <img src={logoUrl} alt="Logo" className="h-12 w-12 object-contain rounded-xl bg-white p-1" onError={(e: any) => { e.target.src = '/logo.png'; }} />
               <span className="font-black text-xl tracking-tight italic uppercase">FITNESS SURABAYA</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda dengan peralatan berkualitas tinggi.
+              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.
             </p>
-            
-            {/* TOMBOL SHOPEE UTAMA */}
-            <a 
-              href={shopeeUrl} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5"
-            >
+            <a href={shopeeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5">
               🧡 Shopee Official <ExternalLink size={14} />
             </a>
           </div>
 
-          {/* KOLOM 2: TAUTAN CEPAT */}
-          <div>
-            <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Tautan Cepat</h4>
+          <div className="hidden lg:block">
+            <h4 className="text-sm font-bold uppercase mb-4">Tautan Cepat</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><a href="#hero" className="hover:text-red-500 transition-colors">Beranda</a></li>
-              <li><a href="#products" className="hover:text-red-500 transition-colors">Semua Produk</a></li>
-              <li><a href="#categories" className="hover:text-red-500 transition-colors">Kategori</a></li>
+              <li><a href="#hero" className="hover:text-red-500">Beranda</a></li>
+              <li><a href="#products" className="hover:text-red-500">Produk</a></li>
+              <li><a href="#categories" className="hover:text-red-500">Kategori</a></li>
             </ul>
           </div>
 
-          {/* KOLOM 3: LAYANAN PELANGGAN */}
           <div>
-            <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Layanan Pelanggan</h4>
+            <h4 className="text-sm font-bold uppercase mb-4">Layanan</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li>Garansi Resmi 1-3 Tahun</li>
-              <li>Pengiriman & Pemasangan Onsite</li>
+              <li>Pengiriman & Pemasangan</li>
               <li>Layanan Pembayaran COD</li>
             </ul>
           </div>
 
-          {/* KOLOM 4: HUBUNGI KAMI */}
           <div>
-            <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Hubungi Kami</h4>
+            <h4 className="text-sm font-bold uppercase mb-4">Hubungi Kami</h4>
             <ul className="space-y-3.5 text-xs text-slate-400">
-              <li>
-                <a 
-                  href="https://maps.google.com/?q=Jl.+Kuwukan+Gg.+2+No.22,+Lontar,+Kec.+Sambikerep,+Surabaya" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-start gap-2.5 hover:text-white transition-colors group"
-                >
-                  <MapPin size={16} className="text-red-500 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                  <div>
-                    <span>Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216</span>
-                    <span className="text-red-500 font-bold block mt-1 underline group-hover:text-red-400">
-                      📍 Buka di Google Maps →
-                    </span>
-                  </div>
-                </a>
-              </li>
-
-              <li>
-                <a 
-                  href="https://wa.me/6281332345448?text=Halo%20Admin%201%20Toko%20Fitness%20Surabaya" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-center gap-2.5 hover:text-green-400 transition-colors group"
-                >
-                  <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span>Admin 1: <strong className="text-white group-hover:text-green-400 underline">+6281332345448</strong></span>
-                </a>
-              </li>
-
-              <li>
-                <a 
-                  href="https://wa.me/6281235907956?text=Halo%20Admin%202%20Toko%20Fitness%20Surabaya" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-center gap-2.5 hover:text-green-400 transition-colors group"
-                >
-                  <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span>Admin 2: <strong className="text-white group-hover:text-green-400 underline">+6281235907956</strong></span>
-                </a>
-              </li>
-
-              <li>
-                <a 
-                  href="mailto:dwisulistya22@gmail.com" 
-                  className="flex items-center gap-2.5 hover:text-red-400 transition-colors group"
-                >
-                  <Mail size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="underline">dwisulistya22@gmail.com</span>
-                </a>
-              </li>
+              <li><a href="https://maps.google.com/?q=Jl.+Kuwukan+Gg.+2+No.22,+Surabaya" target="_blank" rel="noopener noreferrer" className="flex items-start gap-2.5 hover:text-white transition-colors group">
+                  <MapPin size={16} className="text-red-500 shrink-0 mt-0.5" />
+                  <div><span>Jl. Kuwukan Gg. 2 No.22, Surabaya</span><span className="text-red-500 font-bold block mt-1 underline">📍 Buka Maps →</span></div>
+                </a></li>
+              <li><a href="https://wa.me/6281332345448" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-green-400 transition-colors">
+                  <Phone size={16} className="text-red-500 shrink-0" /><span>Admin 1: <strong className="text-white">+6281332345448</strong></span>
+                </a></li>
+              <li><a href="mailto:dwisulistya22@gmail.com" className="flex items-center gap-2.5 hover:text-red-400 transition-colors">
+                  <Mail size={16} className="text-red-500 shrink-0" /><span>dwisulistya22@gmail.com</span>
+                </a></li>
             </ul>
           </div>
         </div>
 
-        {/* COPYRIGHT & SUPER ADMIN */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <p>© 2024 TOKO FITNESS SURABAYA. All rights reserved.</p>
-          
-          <a 
-            href="https://www.sanity.io/manage" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-slate-700 shadow-sm"
-          >
-            <Lock size={12} />
-            Super Admin
+          <a href="https://www.sanity.io/manage" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-slate-700">
+            <Lock size={12} /> Super Admin
           </a>
         </div>
       </div>
