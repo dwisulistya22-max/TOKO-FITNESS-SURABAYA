@@ -5,20 +5,9 @@ import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
-const SHOPEE_FALLBACK = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
+const SAFE_SHOPEE_URL = 'https://shopee.co.id/search?keyword=toko%20fitness%20surabaya';
 
-// BATAS MAKSIMAL PRODUK DI HALAMAN DEPAN
 const HOMEPAGE_LIMIT = 8;
-
-const fixLink = (url: any) => {
-  if (!url || typeof url !== 'string') return '';
-  const link = url.trim();
-  if (!link) return '';
-  if (!link.startsWith('http://') && !link.startsWith('https://')) {
-    return 'https://' + link;
-  }
-  return link;
-};
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('id-ID', {
@@ -33,17 +22,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const [globalShopee, setGlobalShopee] = useState<string>(
-    fixLink((STORE_CONFIG as any)?.shopee) || SHOPEE_FALLBACK
-  );
 
   const fetchProductsAndStore = async () => {
     setLoading(true);
-
-    const storeQuery = encodeURIComponent(`*[_type in ["storeConfig","storeInfo","settings"]][0]{
-      "shopee": coalesce(shopee, shopeeUrl, ""),
-      "facebook": coalesce(facebook, "")
-    }`);
 
     const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
       _id, name, price, description, specs, tag, rating, reviews,
@@ -56,20 +37,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
     for (const id of PROJECT_IDS) {
       try {
-        const storeRes = await fetch(
-          `https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${storeQuery}`,
-          { cache: 'no-store' }
-        );
-        const storeData = await storeRes.json();
-
-        let foundShopee = storeData?.result?.shopee;
-        const fbLink = storeData?.result?.facebook;
-
-        if (!foundShopee && fbLink && (fbLink.includes('sh.ee') || fbLink.includes('shopee'))) {
-          foundShopee = fbLink;
-        }
-        if (foundShopee) setGlobalShopee(fixLink(foundShopee) || SHOPEE_FALLBACK);
-
         const prodRes = await fetch(
           `https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${productQuery}`,
           { cache: 'no-store' }
@@ -89,10 +56,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
             }
 
-            const itemShopeeLink = fixLink(item.shopeeUrl || item.shopee);
             const tagUpper = String(item.tag || '').toUpperCase().trim();
-
-            // SAKELAR FILTER UNGUGULAN
             const isFeatured = Boolean(
               item.isFeatured ||
               item.featured ||
@@ -122,7 +86,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               isFeatured,
               images: allImages,
               category: item.category || 'Umum',
-              shopeeUrl: itemShopeeLink
+              shopeeUrl: item.shopeeUrl || item.shopee || ''
             };
           });
 
@@ -150,7 +114,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     setActiveImgIndex(0);
   };
 
-  // Filter Kategori
   const categoryProducts =
     !activeCategory || activeCategory === 'Semua'
       ? products
@@ -158,25 +121,19 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           (p) => String(p.category).toLowerCase() === String(activeCategory).toLowerCase()
         );
 
-  // Ambil hanya produk yang ditandai Unggulan
   const featuredOnly = products.filter((p) => p.isFeatured);
 
-  // PENENTU BARANG YANG DITAMPILKAN:
   let displayProducts: any[] = [];
-
   if (activeCategory === 'Semua') {
     if (showAll) {
-      // Buka semua jika tombol "Lihat Semua" diklik
       displayProducts = products;
     } else {
-      // BATASI HANYA 4 - 8 BARANG PILIHAN DI HALAMAN DEPAN
       displayProducts =
         featuredOnly.length > 0
           ? featuredOnly.slice(0, HOMEPAGE_LIMIT)
-          : products.slice(0, 4); // default 4 barang saja jika belum ada yang ditandai
+          : products.slice(0, 4);
     }
   } else {
-    // Jika klik Kategori (Cardio, dll) -> Tampilkan semua barang kategori tersebut
     displayProducts = categoryProducts;
   }
 
@@ -184,6 +141,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
   return (
     <section id="products" className="py-20 bg-white">
+      {/* MODAL DETAIL PRODUK */}
       <AnimatePresence>
         {selected && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
@@ -297,7 +255,8 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     <ShoppingCart size={20} /> Pesan via WhatsApp
                   </a>
 
-                  {selected.shopeeUrl && (
+                  {/* LINK SHOPEE DI DALAM MODAL DETAIL (JIKA ADA) */}
+                  {selected.shopeeUrl && selected.shopeeUrl.length > 5 && (
                     <a
                       href={selected.shopeeUrl}
                       target="_blank"
@@ -335,7 +294,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               🔄 Refresh Data
             </button>
             <a
-              href={globalShopee}
+              href={SAFE_SHOPEE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-[#EE4D2D] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md hover:bg-[#d73211] transition-colors"
@@ -351,6 +310,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           </div>
         ) : (
           <>
+            {/* GRID PRODUK BERSIH RAPI (HANYA 1 TOMBOL BLACK "DETAIL & GALERI") */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {displayProducts.map((p: any) => (
                 <div
@@ -392,26 +352,15 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     </div>
                   </div>
 
-                  <div className="p-6 pt-0 space-y-2">
+                  {/* KARTU PRODUK BERSIH: HANYA 1 TOMBOL HITAM ELEGAN */}
+                  <div className="p-6 pt-0">
                     <button
                       type="button"
                       onClick={() => openDetail(p)}
-                      className="w-full bg-gray-900 hover:bg-red-600 text-white py-3 rounded-xl text-xs font-bold transition-all"
+                      className="w-full bg-gray-900 hover:bg-red-600 text-white py-3 rounded-xl text-xs font-bold transition-all shadow-md"
                     >
                       Detail & Galeri
                     </button>
-
-                    {/* TOMBOL SHOPEE HANYA JIKA LINK PRODUK ADA */}
-                    {p.shopeeUrl && (
-                      <a
-                        href={p.shopeeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full bg-[#EE4D2D]/10 text-[#EE4D2D] hover:bg-[#EE4D2D] hover:text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all border border-[#EE4D2D]/20"
-                      >
-                        🧡 Beli di Shopee
-                      </a>
-                    )}
                   </div>
                 </div>
               ))}
