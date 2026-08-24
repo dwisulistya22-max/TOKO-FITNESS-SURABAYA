@@ -5,14 +5,12 @@ import { STORE_CONFIG } from '../data/config';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// 🎯 LINK LANGSUNG TOKO ANDA (TIDAK AKAN NYASAR KE TOKO LAIN)
-const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/toko_fitness_surabaya';
+// 🎯 LINK PASTI TOKO SHOPEE ANDA
+const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/search?keyword=toko%20fitness';
 
-// FUNGSI PEMBERSIH LINK (PENCEGAH LINK RUSAK / MATI)
 const cleanShopeeUrl = (url: any) => {
   if (!url || typeof url !== 'string') return OFFICIAL_SHOPEE_URL;
   const trimmed = url.trim();
-  // Jika link berisi id.sh.ee yang sering mati, paksa pakai link toko langsung
   if (trimmed.includes('id.sh.ee') || trimmed.length < 10) {
     return OFFICIAL_SHOPEE_URL;
   }
