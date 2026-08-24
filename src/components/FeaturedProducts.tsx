@@ -46,6 +46,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
         if (prodData?.result?.length) {
           const mappedProducts = prodData.result.map((item: any) => {
+            // MENGUMPULKAN SELURUH FOTO (UTAMA + GALERI)
             const allImages: string[] = [];
             if (item.mainImage) allImages.push(item.mainImage);
             if (Array.isArray(item.galleryImages)) {
@@ -57,9 +58,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
             }
 
-            // LOGIKA PEMILIHAN VIA RATING:
-            // jika Rating = 5 (atau diisi 5) -> TAMPIL DI HOMEPAGE
-            // jika Rating < 5 (misal 4, 3, 0) -> DISEMBUNYIKAN KE KATEGORI
+            // LOGIKA PEMILIHAN VIA RATING 5 UNTUK HALAMAN DEPAN
             const productRating = Number(item.rating || 5);
             const isFeatured = Boolean(
               productRating >= 5 || 
@@ -82,7 +81,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               reviews: item.reviews || 0,
               order: priorityNumber,
               isFeatured,
-              images: allImages,
+              images: allImages, // Menyimpan array seluruh gambar produk
               category: item.category || 'Umum',
               shopeeUrl: item.shopeeUrl || item.shopee || ''
             };
@@ -139,7 +138,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
   return (
     <section id="products" className="py-20 bg-white">
-      {/* MODAL DETAIL PRODUK */}
+      {/* MODAL DETAIL PRODUK + GALERI LENGKAP */}
       <AnimatePresence>
         {selected && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
@@ -174,7 +173,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                             prev === 0 ? selected.images.length - 1 : prev - 1
                           )
                         }
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 z-10"
                       >
                         <ChevronLeft size={20} />
                       </button>
@@ -185,13 +184,15 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                             prev === selected.images.length - 1 ? 0 : prev + 1
                           )
                         }
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 z-10"
                       >
                         <ChevronRight size={20} />
                       </button>
                     </>
                   )}
                 </div>
+
+                {/* THUMBNAIL SEMUA GAMBAR DI MODAL */}
                 {selected.images.length > 1 && (
                   <div className="flex gap-2 mt-3 overflow-x-auto pb-1 justify-center">
                     {selected.images.map((img: string, idx: number) => (
@@ -325,8 +326,10 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                           {p.tag}
                         </span>
                       )}
+
+                      {/* 📷 BADGE JUMLAH FOTO DIKEMBALIKAN */}
                       {p.images.length > 1 && (
-                        <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md">
+                        <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md z-10">
                           📷 {p.images.length} FOTO
                         </span>
                       )}
