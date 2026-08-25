@@ -11,8 +11,6 @@ const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 const Footer = () => {
   const [shopeeUrl, setShopeeUrl] = useState<string>(OFFICIAL_SHOPEE_URL);
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
-  
-  // STATE UNTUK ALAMAT DINAMIS DARI SANITY
   const [address, setAddress] = useState<string>('Jl. Dukuh Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya');
 
   useEffect(() => {
@@ -64,7 +62,7 @@ const Footer = () => {
               <span className="font-black text-xl tracking-tight italic uppercase">TOKO FITNESS SURABAYA</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.
+              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda dengan peralatan berkualitas tinggi.
             </p>
             <a href={shopeeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5">
               🧡 Shopee Official <ExternalLink size={14} />
@@ -81,15 +79,13 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* KOLOM 3: LAYANAN (SUDAH DIUBAH KE CASH ONLY) */}
+          {/* KOLOM 3: LAYANAN UNGGULAN */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Layanan</h4>
             <ul className="space-y-3 text-xs text-slate-400">
-              <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-500" /> Garansi Resmi 1-3 Tahun</li>
-              <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-500" /> Pengiriman & Pemasangan</li>
-              <li className="flex items-center gap-2 text-white font-bold bg-slate-800/50 p-2 rounded-lg border border-slate-700">
-                <CheckCircle2 size={14} className="text-red-500" /> Pembayaran Cash Only
-              </li>
+              <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Garansi Resmi 1-3 Tahun</li>
+              <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Pengiriman & Pemasangan Onsite</li>
+              <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Unit 100% Original & Baru</li>
             </ul>
           </div>
 
