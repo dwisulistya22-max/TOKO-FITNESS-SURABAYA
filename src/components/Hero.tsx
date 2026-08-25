@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
@@ -105,7 +105,7 @@ const Hero = () => {
             Di Rumah Anda
           </motion.h1>
 
-          {/* 3. DESKRIPSI & INFORMASI CASH ONLY */}
+          {/* 3. DESKRIPSI & BADGE LAYANAN MEWAH */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -122,10 +122,10 @@ const Hero = () => {
                 <span>Garansi Resmi 1-3 Tahun</span>
               </div>
               
-              {/* BADGE DIUBAH MENJADI PEMBAYARAN CASH ONLY */}
+              {/* BADGE DIGANTI MENJADI PENGIRIMAN & PASANG ONSITE */}
               <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 shadow-lg">
-                <ShieldCheck size={16} className="text-red-500 shrink-0" />
-                <span>Pembayaran Cash Only</span>
+                <Truck size={16} className="text-red-500 shrink-0" />
+                <span>Pengiriman & Pasang Onsite</span>
               </div>
             </div>
           </motion.div>
