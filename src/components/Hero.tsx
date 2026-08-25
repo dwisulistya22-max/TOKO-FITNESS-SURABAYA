@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Truck } from 'lucide-react';
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
@@ -72,7 +72,7 @@ const Hero = () => {
       </div>
 
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="max-w-5xl flex flex-col items-start text-left space-y-6">
+        <div className="max-w-4xl flex flex-col items-start text-left space-y-6">
           
           {/* 1. LOGO RESMI */}
           <motion.div
@@ -91,7 +91,7 @@ const Hero = () => {
             />
           </motion.div>
 
-          {/* 2. TULISAN JUDUL UTAMA */}
+          {/* 2. TULISAN JUDUL UTAMA (DI RUMAH ANDA DIPISAH KE BARIS BARU) */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -102,30 +102,32 @@ const Hero = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-orange-500">
               Profesional
             </span>{' '}
+            <br />
             Di Rumah Anda
           </motion.h1>
 
-          {/* 3. DESKRIPSI & BADGE LAYANAN SEJAJAR HORIZONTAL */}
+          {/* 3. DESKRIPSI DAN BADGES DI BAWAHNYA */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-white/20 w-full"
+            className="flex flex-col items-start gap-4 pt-6 border-t border-white/20 w-full"
           >
-            <p className="text-gray-200 text-xs sm:text-sm max-w-xl leading-relaxed font-medium drop-shadow">
+            {/* TULISAN DESKRIPSI */}
+            <p className="text-gray-200 text-xs sm:text-sm max-w-2xl leading-relaxed font-medium drop-shadow">
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Siap kirim & pasang langsung di rumah Anda.
             </p>
 
-            {/* BADGE DIKUNCI SELALU SEJAJAR HORIZONTAL (FLEX-ROW) */}
-            <div className="flex flex-row items-center gap-3 text-xs sm:text-sm text-white shrink-0 overflow-x-auto pb-1">
+            {/* BADGES DITARUH TEPAT DI BAWAH DESKRIPSI (SEJAJAR HORIZONTAL) */}
+            <div className="flex flex-row items-center gap-3 text-xs sm:text-sm text-white pt-1">
               <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg whitespace-nowrap">
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
                 <span>Garansi Resmi 1-3 Tahun</span>
               </div>
               
               <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg whitespace-nowrap">
-                <Truck size={16} className="text-red-500 shrink-0" />
-                <span>Pengiriman & Pasang Onsite</span>
+                <CheckCircle2 size={16} className="text-red-500 shrink-0" />
+                <span>Barang Baru 100%</span>
               </div>
             </div>
           </motion.div>
