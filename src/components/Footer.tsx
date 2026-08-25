@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, Mail, ExternalLink, Lock } from 'lucide-react';
+import { MapPin, Phone, Mail, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
@@ -17,7 +17,6 @@ const Footer = () => {
 
   useEffect(() => {
     const fetchFooterData = async () => {
-      // Query mengambil Logo, Shopee, dan ALAMAT terbaru
       const query = encodeURIComponent(`{
         "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
           "shopee": coalesce(shopee, shopeeUrl, ""),
@@ -34,14 +33,9 @@ const Footer = () => {
           
           if (data?.result?.store) {
             const storeData = data.result.store;
-            
-            // 1. Update Logo
             if (storeData.logo) setLogoUrl(storeData.logo);
-
-            // 2. Update Alamat (Agar muncul kata DUKUH sesuai Sanity)
             if (storeData.alamat) setAddress(storeData.alamat);
 
-            // 3. Update Link Shopee
             const rawLink = storeData.shopee || storeData.facebook || '';
             if (rawLink && rawLink.includes('shopee.co.id') && !rawLink.includes('id.sh.ee')) {
                setShopeeUrl(rawLink.startsWith('http') ? rawLink : 'https://' + rawLink);
@@ -63,6 +57,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
           
+          {/* KOLOM 1: LOGO & SHOPEE */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img src={logoUrl} alt="Logo" className="h-12 w-12 object-contain rounded-xl bg-white p-1" onError={(e: any) => { e.target.src = '/logo.png'; }} />
@@ -76,6 +71,7 @@ const Footer = () => {
             </a>
           </div>
 
+          {/* KOLOM 2: TAUTAN CEPAT */}
           <div className="hidden lg:block">
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Tautan Cepat</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
@@ -85,52 +81,44 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* KOLOM 3: LAYANAN (SUDAH DIUBAH KE CASH ONLY) */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Layanan</h4>
-            <ul className="space-y-2.5 text-xs text-slate-400">
-              <li>Garansi Resmi 1-3 Tahun</li>
-              <li>Pengiriman & Pemasangan Onsite</li>
-              <li>Layanan Pembayaran COD</li>
+            <ul className="space-y-3 text-xs text-slate-400">
+              <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-500" /> Garansi Resmi 1-3 Tahun</li>
+              <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-500" /> Pengiriman & Pemasangan</li>
+              <li className="flex items-center gap-2 text-white font-bold bg-slate-800/50 p-2 rounded-lg border border-slate-700">
+                <CheckCircle2 size={14} className="text-red-500" /> Pembayaran Cash Only
+              </li>
             </ul>
           </div>
 
+          {/* KOLOM 4: HUBUNGI KAMI */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Hubungi Kami</h4>
             <ul className="space-y-3.5 text-xs text-slate-400">
-              {/* ALAMAT DIAMBIL LANGSUNG DARI SANITY */}
               <li>
-                <a 
-                  href={`https://maps.google.com/?q=${encodeURIComponent(address)}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-start gap-2.5 hover:text-white transition-colors group"
-                >
+                <a href={`https://maps.google.com/?q=${encodeURIComponent(address)}`} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2.5 hover:text-white transition-colors group">
                   <MapPin size={16} className="text-red-500 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                  <div>
-                    <span className="leading-relaxed">{address}</span>
-                    <span className="text-red-500 font-bold block mt-1 underline">📍 Buka Maps →</span>
-                  </div>
+                  <div><span>{address}</span><span className="text-red-500 font-bold block mt-1 underline">📍 Buka Maps →</span></div>
                 </a>
               </li>
-
               <li>
                 <a href="https://wa.me/6281332345448" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-green-400 transition-colors group">
                   <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
                   <span>Admin 1: <strong className="text-white">+6281332345448</strong></span>
                 </a>
               </li>
-
               <li>
                 <a href="https://wa.me/6281235907956" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-green-400 transition-colors group">
                   <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
                   <span>Admin 2: <strong className="text-white">+6281235907956</strong></span>
                 </a>
               </li>
-
               <li>
                 <a href="mailto:dwisulistya22@gmail.com" className="flex items-center gap-2.5 hover:text-red-400 transition-colors group">
                   <Mail size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="underline">dwisulistya22@gmail.com</span>
+                  <span>dwisulistya22@gmail.com</span>
                 </a>
               </li>
             </ul>
