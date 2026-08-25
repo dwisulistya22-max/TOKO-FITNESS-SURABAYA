@@ -57,7 +57,7 @@ const Hero = () => {
   return (
     <section id="hero" className="relative min-h-[75vh] bg-gray-950 text-white flex items-center overflow-hidden py-12">
       
-      {/* GAMBAR BACKGROUND - DIBUAT JAUH LEBIH TERANG (OPACITY 75%) */}
+      {/* GAMBAR BACKGROUND */}
       <div className="absolute inset-0 z-0">
         <img
           src={bgUrl}
@@ -67,7 +67,6 @@ const Hero = () => {
             e.target.src = DEFAULT_BG;
           }}
         />
-        {/* EFEK OVERLAY HITAM TIPIS & HALUS SUPAYA TEKS TETAP DIBACA DENGAN JELAS */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 z-10" />
       </div>
@@ -84,7 +83,7 @@ const Hero = () => {
           >
             <img
               src={logoUrl}
-              alt="Fitness Surabaya Official Logo"
+              alt="Toko Fitness Surabaya Official Logo"
               className="h-32 sm:h-44 lg:h-52 w-auto object-contain rounded-2xl drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)]"
               onError={(e: any) => {
                 e.target.src = '/logo.png';
@@ -106,7 +105,7 @@ const Hero = () => {
             Di Rumah Anda
           </motion.h1>
 
-          {/* 3. DESKRIPSI & GARANSI SEJAJAR */}
+          {/* 3. DESKRIPSI & INFORMASI CASH ONLY */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -122,9 +121,11 @@ const Hero = () => {
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
                 <span>Garansi Resmi 1-3 Tahun</span>
               </div>
+              
+              {/* BADGE DIUBAH MENJADI PEMBAYARAN CASH ONLY */}
               <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 shadow-lg">
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
-                <span>Bisa COD & Pasang Onsite</span>
+                <span>Pembayaran Cash Only</span>
               </div>
             </div>
           </motion.div>
