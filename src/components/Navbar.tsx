@@ -11,7 +11,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   const [mobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
 
-  // STATE UNTUK KONTROL PROMO DARI SANITY
   const [promoText, setPromoText] = useState<string>('PROMO SETIAP HARI');
   const [showPromo, setShowPromo] = useState<boolean>(true);
 
@@ -31,7 +30,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
 
   useEffect(() => {
     const fetchNavbarData = async () => {
-      // Query membaca Logo & Pengaturan Promo dari Sanity
       const query = encodeURIComponent(`{
         "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
           "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
@@ -48,20 +46,16 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
           const data = await res.json();
           
           if (data?.result) {
-            // Update Logo
             if (data.result.store?.logo) {
               setLogoUrl(data.result.store.logo);
             }
 
-            // Update Status Promo
             const rawTag = data.result.promo?.tag;
             const isDisabled = data.result.promo?.disable;
 
             if (isDisabled || rawTag === null || rawTag === undefined || String(rawTag).trim() === '') {
-              // JIKA DI SANITY KOSONG / DISABLED -> MATIKAN BADGE PROMO
               setShowPromo(false);
             } else {
-              // JIKA TERISI -> TAMPILKAN BADGE PROMO
               setShowPromo(true);
               setPromoText(String(rawTag).trim());
             }
@@ -80,20 +74,20 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
           
-          {/* LOGO RESMI */}
+          {/* LOGO & NAMA TOKO LENGKAP */}
           <a href="#" className="flex items-center gap-3 group shrink-0">
             <img
               src={logoUrl}
-              alt="Logo"
+              alt="Logo Toko Fitness Surabaya"
               className="h-10 w-10 sm:h-12 sm:w-12 object-contain rounded-xl bg-black p-1 transition-transform group-hover:scale-105"
               onError={(e: any) => { e.target.src = '/logo.png'; }}
             />
             <div className="hidden sm:flex flex-col">
-              <span className="font-black text-base sm:text-lg tracking-tight italic text-gray-900 leading-none">
-                FITNESS SURABAYA
+              <span className="font-black text-base sm:text-lg tracking-tight italic text-gray-900 leading-none uppercase">
+                TOKO FITNESS SURABAYA
               </span>
               <span className="text-[9px] text-red-600 font-bold tracking-widest uppercase mt-0.5">
-                Official Equipment
+                Official Equipment & Accessories
               </span>
             </div>
           </a>
@@ -106,10 +100,9 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
             <a href="#footer" className="hover:text-red-600 transition-colors">Tentang Kami</a>
           </nav>
 
-          {/* SISI KANAN: HUBUNGI KAMI + BADGE PROMO DINAMIS */}
+          {/* SISI KANAN: HUBUNGI KAMI + BADGE PROMO */}
           <div className="flex items-center gap-3">
             
-            {/* SEARCH & CART */}
             <a href="#products" className="p-2 text-gray-600 hover:text-red-600 transition-colors" title="Cari Produk">
               <Search size={20} />
             </a>
@@ -125,10 +118,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
               </button>
             )}
 
-            {/* CONTAINER KHUSUS TOMBOL & BADGE LEDAKAN */}
             <div className="relative flex flex-col items-end">
-              
-              {/* TOMBOL HUBUNGI KAMI */}
               <a
                 href={`https://wa.me/${waNumber}?text=Halo%20Admin%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20konsultasi`}
                 target="_blank"
@@ -138,7 +128,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 <Phone size={15} /> Hubungi Kami
               </a>
 
-              {/* 🔥 BADGE "PROMO SETIAP HARI" HANYA MUNCUL JIKA AKTIF DI SANITY 🔥 */}
               {showPromo && (
                 <motion.div
                   initial={{ scale: 0.9 }}
@@ -174,7 +163,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
 
             </div>
 
-            {/* MOBILE MENU HAMBURGER */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!mobileMenuOpen)}
@@ -187,7 +175,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
         </div>
       </div>
 
-      {/* MOBILE MENU DROPDOWN */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
