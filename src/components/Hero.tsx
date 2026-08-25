@@ -72,7 +72,7 @@ const Hero = () => {
       </div>
 
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="max-w-4xl flex flex-col items-start text-left space-y-6">
+        <div className="max-w-5xl flex flex-col items-start text-left space-y-6">
           
           {/* 1. LOGO RESMI */}
           <motion.div
@@ -105,25 +105,25 @@ const Hero = () => {
             Di Rumah Anda
           </motion.h1>
 
-          {/* 3. DESKRIPSI & BADGE LAYANAN MEWAH */}
+          {/* 3. DESKRIPSI & BADGE LAYANAN SEJAJAR HORIZONTAL */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-white/20 w-full"
+            className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-white/20 w-full"
           >
-            <p className="text-gray-200 text-xs sm:text-sm max-w-md leading-relaxed font-medium drop-shadow">
+            <p className="text-gray-200 text-xs sm:text-sm max-w-xl leading-relaxed font-medium drop-shadow">
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Siap kirim & pasang langsung di rumah Anda.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-white">
-              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 shadow-lg">
+            {/* BADGE DIKUNCI SELALU SEJAJAR HORIZONTAL (FLEX-ROW) */}
+            <div className="flex flex-row items-center gap-3 text-xs sm:text-sm text-white shrink-0 overflow-x-auto pb-1">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg whitespace-nowrap">
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
                 <span>Garansi Resmi 1-3 Tahun</span>
               </div>
               
-              {/* BADGE DIGANTI MENJADI PENGIRIMAN & PASANG ONSITE */}
-              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 shadow-lg">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg whitespace-nowrap">
                 <Truck size={16} className="text-red-500 shrink-0" />
                 <span>Pengiriman & Pasang Onsite</span>
               </div>
