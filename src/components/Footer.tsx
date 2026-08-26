@@ -5,8 +5,15 @@ import { STORE_CONFIG } from '../data/config';
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// LINK SHOPEE TOKO ANDA
+// 🎯 LINK SHOPEE RESMI ANDA
 const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
+
+// 🛒 IKON TAS SHOPEE ASLI
+const ShopeeIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
+  </svg>
+);
 
 const Footer = () => {
   const [shopeeUrl, setShopeeUrl] = useState<string>(OFFICIAL_SHOPEE_URL);
@@ -55,7 +62,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
           
-          {/* KOLOM 1: LOGO & SHOPEE */}
+          {/* KOLOM 1: LOGO & SHOPEE OFFICIAL */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img src={logoUrl} alt="Logo" className="h-12 w-12 object-contain rounded-xl bg-white p-1" onError={(e: any) => { e.target.src = '/logo.png'; }} />
@@ -65,7 +72,7 @@ const Footer = () => {
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda dengan peralatan berkualitas tinggi.
             </p>
             <a href={shopeeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5">
-              🧡 Shopee Official <ExternalLink size={14} />
+              <ShopeeIcon className="w-4 h-4" /> Shopee Official <ExternalLink size={14} />
             </a>
           </div>
 
