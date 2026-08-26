@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Share2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
+// 🎯 LINK SHOPEE RESMI ANDA
 const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 const HOMEPAGE_LIMIT = 8;
 
@@ -18,6 +19,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [copied, setCopied] = useState(false); // State untuk pemberitahuan link disalin
 
   const fetchProductsAndStore = async () => {
     setLoading(true);
@@ -94,6 +96,27 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const openDetail = (product: any) => {
     setSelected(product);
     setActiveImgIndex(0);
+    setCopied(false);
+  };
+
+  // 🔗 FUNGSI BAGIKAN PRODUK (SHARE)
+  const handleShareProduct = (product: any) => {
+    const currentUrl = window.location.href.split('#')[0] + '#products';
+    const textMessage = `Cek produk *${product.name}* (${formatPrice(product.price)}) di Toko Fitness Surabaya!\n\nLihat selengkapnya di: ${currentUrl}`;
+
+    // Jika di HP yang mendukung Native Web Share
+    if (navigator.share) {
+      navigator.share({
+        title: product.name,
+        text: textMessage,
+        url: currentUrl,
+      }).catch(() => {});
+    } else {
+      // Fallback untuk Desktop/Laptop: Salin ke clipboard
+      navigator.clipboard.writeText(textMessage);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
   };
 
   const categoryProducts =
@@ -140,7 +163,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               <div className="md:w-1/2 bg-gray-900 p-4 flex flex-col relative min-h-[350px]">
                 <div className="relative w-full h-full rounded-2xl overflow-hidden bg-black flex items-center justify-center group select-none">
                   
-                  {/* FOTO UTAMA DI MODAL */}
+                  {/* FOTO UTAMA */}
                   <img
                     src={selected.images[activeImgIndex]}
                     alt={selected.name}
@@ -148,7 +171,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     className="w-full h-full object-contain transition-all pointer-events-none"
                   />
 
-                  {/* 🌟 STEMPEL WATERMARK OTOMATIS DI MODAL */}
+                  {/* STEMPEL WATERMARK */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
                     <div className="bg-black/80 text-white font-black text-xs sm:text-base uppercase tracking-widest px-4 py-2 rounded-2xl border-2 border-white/40 italic rotate-[-12deg] text-center shadow-2xl">
                       OFFICIAL • TOKO FITNESS SURABAYA
@@ -217,6 +240,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   )}
                 </div>
 
+                {/* TOMBOL-TOMBOL TRANSAKSI & SHARE */}
                 <div className="space-y-3">
                   <a
                     href={`https://wa.me/${waNumber}?text=Halo, saya tertarik dengan produk *${encodeURIComponent(selected.name)}*`}
@@ -237,7 +261,27 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                       🧡 Beli di Shopee Official <ExternalLink size={18} />
                     </a>
                   )}
+
+                  {/* 🚀 TOMBOL BAGIKAN PRODUK (NEW) */}
+                  <button
+                    type="button"
+                    onClick={() => handleShareProduct(selected)}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={18} className="text-green-600" />
+                        <span className="text-green-600">Link Produk Berhasil Disalin!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 size={18} className="text-red-600" />
+                        <span>Bagikan Produk Ini Ke Teman</span>
+                      </>
+                    )}
+                  </button>
                 </div>
+
               </div>
             </motion.div>
           </div>
@@ -287,8 +331,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 >
                   <div>
                     <div className="relative aspect-square bg-gray-50 overflow-hidden select-none">
-                      
-                      {/* FOTO KARTU PRODUK */}
                       <img
                         src={p.images[0]}
                         alt={p.name}
@@ -296,7 +338,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none"
                       />
 
-                      {/* 🌟 STEMPEL WATERMARK OTOMATIS DI KARTU PRODUK */}
+                      {/* STEMPEL WATERMARK */}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25">
                         <div className="bg-black/70 text-white font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-xl border border-white/30 backdrop-blur-xs italic rotate-[-10deg] text-center shadow-lg">
                           OFFICIAL • TOKO FITNESS SURABAYA
