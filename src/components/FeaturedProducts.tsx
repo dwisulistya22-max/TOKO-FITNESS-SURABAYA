@@ -1,21 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
-// 🎯 LINK SHOPEE RESMI ANDA
 const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 const HOMEPAGE_LIMIT = 8;
 
 const formatPrice = (price: number) =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(price || 0);
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
 const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [products, setProducts] = useState<any[]>([]);
@@ -46,7 +41,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
         if (prodData?.result?.length) {
           const mappedProducts = prodData.result.map((item: any) => {
-            // MENGUMPULKAN SELURUH FOTO (UTAMA + GALERI)
             const allImages: string[] = [];
             if (item.mainImage) allImages.push(item.mainImage);
             if (Array.isArray(item.galleryImages)) {
@@ -58,13 +52,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
             }
 
-            // LOGIKA PEMILIHAN VIA RATING 5 UNTUK HALAMAN DEPAN
             const productRating = Number(item.rating || 5);
             const isFeatured = Boolean(
-              productRating >= 5 || 
-              item.isFeatured || 
-              item.featured || 
-              item.isUnggulan
+              productRating >= 5 || item.isFeatured || item.featured || item.isUnggulan
             );
 
             let priorityNumber = 999;
@@ -81,7 +71,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               reviews: item.reviews || 0,
               order: priorityNumber,
               isFeatured,
-              images: allImages, // Menyimpan array seluruh gambar produk
+              images: allImages,
               category: item.category || 'Umum',
               shopeeUrl: item.shopeeUrl || item.shopee || ''
             };
@@ -92,19 +82,14 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           break;
         }
       } catch (err) {
-        console.error('Error fetching Sanity data:', err);
+        console.error(err);
       }
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchProductsAndStore();
-  }, []);
-
-  useEffect(() => {
-    setShowAll(false);
-  }, [activeCategory]);
+  useEffect(() => { fetchProductsAndStore(); }, []);
+  useEffect(() => { setShowAll(false); }, [activeCategory]);
 
   const openDetail = (product: any) => {
     setSelected(product);
@@ -122,14 +107,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
 
   let displayProducts: any[] = [];
   if (activeCategory === 'Semua') {
-    if (showAll) {
-      displayProducts = products;
-    } else {
-      displayProducts =
-        featuredOnly.length > 0
-          ? featuredOnly.slice(0, HOMEPAGE_LIMIT)
-          : products.slice(0, 4);
-    }
+    displayProducts = showAll
+      ? products
+      : (featuredOnly.length > 0 ? featuredOnly.slice(0, HOMEPAGE_LIMIT) : products.slice(0, 4));
   } else {
     displayProducts = categoryProducts;
   }
@@ -137,8 +117,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
   return (
-    <section id="products" className="py-20 bg-white">
-      {/* MODAL DETAIL PRODUK + GALERI LENGKAP */}
+    <section id="products" className="py-20 bg-white select-none" onContextMenu={(e) => e.preventDefault()}>
+      
+      {/* MODAL DETAIL PRODUK */}
       <AnimatePresence>
         {selected && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
@@ -152,38 +133,40 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 type="button"
                 onClick={() => setSelected(null)}
                 className="absolute top-4 right-4 z-20 bg-white/90 p-2 rounded-full shadow-lg hover:bg-red-600 hover:text-white transition-all"
-                aria-label="Tutup modal"
               >
                 <X size={22} />
               </button>
 
               <div className="md:w-1/2 bg-gray-900 p-4 flex flex-col relative min-h-[350px]">
-                <div className="relative w-full h-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+                <div className="relative w-full h-full rounded-2xl overflow-hidden bg-black flex items-center justify-center group select-none">
+                  
+                  {/* FOTO UTAMA DI MODAL */}
                   <img
                     src={selected.images[activeImgIndex]}
                     alt={selected.name}
-                    className="w-full h-full object-contain transition-all"
+                    draggable={false}
+                    className="w-full h-full object-contain transition-all pointer-events-none"
                   />
+
+                  {/* 🌟 STEMPEL WATERMARK OTOMATIS DI MODAL */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                    <div className="bg-black/80 text-white font-black text-xs sm:text-base uppercase tracking-widest px-4 py-2 rounded-2xl border-2 border-white/40 italic rotate-[-12deg] text-center shadow-2xl">
+                      OFFICIAL • TOKO FITNESS SURABAYA
+                    </div>
+                  </div>
+
                   {selected.images.length > 1 && (
                     <>
                       <button
                         type="button"
-                        onClick={() =>
-                          setActiveImgIndex((prev) =>
-                            prev === 0 ? selected.images.length - 1 : prev - 1
-                          )
-                        }
+                        onClick={() => setActiveImgIndex((prev) => (prev === 0 ? selected.images.length - 1 : prev - 1))}
                         className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 z-10"
                       >
                         <ChevronLeft size={20} />
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          setActiveImgIndex((prev) =>
-                            prev === selected.images.length - 1 ? 0 : prev + 1
-                          )
-                        }
+                        onClick={() => setActiveImgIndex((prev) => (prev === selected.images.length - 1 ? 0 : prev + 1))}
                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 z-10"
                       >
                         <ChevronRight size={20} />
@@ -192,7 +175,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   )}
                 </div>
 
-                {/* THUMBNAIL SEMUA GAMBAR DI MODAL */}
                 {selected.images.length > 1 && (
                   <div className="flex gap-2 mt-3 overflow-x-auto pb-1 justify-center">
                     {selected.images.map((img: string, idx: number) => (
@@ -200,11 +182,10 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                         key={idx}
                         src={img}
                         alt=""
+                        draggable={false}
                         onClick={() => setActiveImgIndex(idx)}
                         className={`w-14 h-14 rounded-lg object-cover cursor-pointer border-2 transition-all ${
-                          activeImgIndex === idx
-                            ? 'border-red-500 scale-105'
-                            : 'border-transparent opacity-50 hover:opacity-100'
+                          activeImgIndex === idx ? 'border-red-500 scale-105' : 'border-transparent opacity-50 hover:opacity-100'
                         }`}
                       />
                     ))}
@@ -212,41 +193,33 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 )}
               </div>
 
-              <div className="md:w-1/2 p-8 overflow-y-auto">
+              <div className="md:w-1/2 p-8 overflow-y-auto select-none">
                 <div className="text-xs font-bold text-red-600 uppercase tracking-widest mb-2">
                   {selected.category}
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-3">{selected.name}</h2>
-                <div className="text-2xl font-black text-red-600 mb-6">
-                  {formatPrice(selected.price)}
-                </div>
+                <div className="text-2xl font-black text-red-600 mb-6">{formatPrice(selected.price)}</div>
 
                 <div className="mb-8 space-y-4">
                   <div>
                     <h4 className="font-bold flex items-center gap-2 mb-2 border-b pb-2 text-gray-900">
-                      <Info size={18} className="text-red-600" /> Deskripsi
+                      <Info size={18} className="text-red-600" /> Deskripsi Produk
                     </h4>
-                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                    <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap select-none">
                       {selected.description || 'Peralatan fitness kualitas premium.'}
                     </p>
                   </div>
                   {selected.specs && (
                     <div className="bg-gray-50 p-4 rounded-xl">
-                      <h4 className="font-bold text-gray-900 text-xs mb-2 uppercase">
-                        Spesifikasi Teknis:
-                      </h4>
-                      <p className="text-gray-500 text-xs leading-relaxed whitespace-pre-wrap">
-                        {selected.specs}
-                      </p>
+                      <h4 className="font-bold text-gray-900 text-xs mb-2 uppercase">Spesifikasi Teknis:</h4>
+                      <p className="text-gray-500 text-xs leading-relaxed whitespace-pre-wrap select-none">{selected.specs}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-3">
                   <a
-                    href={`https://wa.me/${waNumber}?text=Halo, saya tertarik dengan produk *${encodeURIComponent(
-                      selected.name
-                    )}*`}
+                    href={`https://wa.me/${waNumber}?text=Halo, saya tertarik dengan produk *${encodeURIComponent(selected.name)}*`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full bg-green-500 hover:bg-green-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
@@ -278,9 +251,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               Produk Pilihan
             </h2>
             <p className="text-gray-500">
-              {activeCategory === 'Semua'
-                ? 'Rekomendasi peralatan fitness pilihan terbaik.'
-                : `Koleksi lengkap kategori ${activeCategory}`}
+              {activeCategory === 'Semua' ? 'Rekomendasi peralatan fitness pilihan terbaik.' : `Koleksi lengkap kategori ${activeCategory}`}
             </p>
           </div>
           <div className="flex gap-2">
@@ -315,25 +286,36 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group"
                 >
                   <div>
-                    <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                    <div className="relative aspect-square bg-gray-50 overflow-hidden select-none">
+                      
+                      {/* FOTO KARTU PRODUK */}
                       <img
                         src={p.images[0]}
                         alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        draggable={false}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none"
                       />
+
+                      {/* 🌟 STEMPEL WATERMARK OTOMATIS DI KARTU PRODUK */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25">
+                        <div className="bg-black/70 text-white font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-xl border border-white/30 backdrop-blur-xs italic rotate-[-10deg] text-center shadow-lg">
+                          OFFICIAL • TOKO FITNESS SURABAYA
+                        </div>
+                      </div>
+
                       {p.tag && (
                         <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
                           {p.tag}
                         </span>
                       )}
 
-                      {/* 📷 BADGE JUMLAH FOTO DIKEMBALIKAN */}
                       {p.images.length > 1 && (
                         <span className="absolute bottom-4 right-4 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md z-10">
                           📷 {p.images.length} FOTO
                         </span>
                       )}
                     </div>
+
                     <div className="p-6">
                       <div className="text-[10px] text-red-600 font-bold uppercase mb-1">
                         {p.category}
@@ -364,7 +346,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               ))}
             </div>
 
-            {/* TOMBOL BUKA / TUTUP KATALOG */}
             {activeCategory === 'Semua' && products.length > displayProducts.length && (
               <div className="text-center mt-12">
                 <button
@@ -373,13 +354,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   className="inline-flex items-center gap-2 bg-gray-900 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-xl hover:shadow-red-600/30 transform hover:-translate-y-0.5"
                 >
                   {showAll ? (
-                    <>
-                      Tampilkan Produk Pilihan Saja <ChevronUp size={18} />
-                    </>
+                    <>Tampilkan Produk Pilihan Saja <ChevronUp size={18} /></>
                   ) : (
-                    <>
-                      Lihat Semua Katalog Produk ({products.length} Barang) <ChevronDown size={18} />
-                    </>
+                    <>Lihat Semua Katalog Produk ({products.length}) <ChevronDown size={18} /></>
                   )}
                 </button>
               </div>
