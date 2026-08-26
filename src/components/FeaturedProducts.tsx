@@ -19,7 +19,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const [copied, setCopied] = useState(false); // State untuk pemberitahuan link disalin
+  const [copied, setCopied] = useState(false);
 
   const fetchProductsAndStore = async () => {
     setLoading(true);
@@ -99,12 +99,10 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     setCopied(false);
   };
 
-  // 🔗 FUNGSI BAGIKAN PRODUK (SHARE)
   const handleShareProduct = (product: any) => {
     const currentUrl = window.location.href.split('#')[0] + '#products';
     const textMessage = `Cek produk *${product.name}* (${formatPrice(product.price)}) di Toko Fitness Surabaya!\n\nLihat selengkapnya di: ${currentUrl}`;
 
-    // Jika di HP yang mendukung Native Web Share
     if (navigator.share) {
       navigator.share({
         title: product.name,
@@ -112,7 +110,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         url: currentUrl,
       }).catch(() => {});
     } else {
-      // Fallback untuk Desktop/Laptop: Salin ke clipboard
       navigator.clipboard.writeText(textMessage);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
@@ -240,7 +237,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   )}
                 </div>
 
-                {/* TOMBOL-TOMBOL TRANSAKSI & SHARE */}
+                {/* TOMBOL TRANSAKSI & SHARE */}
                 <div className="space-y-3">
                   <a
                     href={`https://wa.me/${waNumber}?text=Halo, saya tertarik dengan produk *${encodeURIComponent(selected.name)}*`}
@@ -262,7 +259,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     </a>
                   )}
 
-                  {/* 🚀 TOMBOL BAGIKAN PRODUK (NEW) */}
                   <button
                     type="button"
                     onClick={() => handleShareProduct(selected)}
@@ -298,14 +294,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               {activeCategory === 'Semua' ? 'Rekomendasi peralatan fitness pilihan terbaik.' : `Koleksi lengkap kategori ${activeCategory}`}
             </p>
           </div>
+          
+          {/* SISI KANAN HEADER PRODUK: HANYA ADA TOMBOL SHOPEE MALL */}
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={fetchProductsAndStore}
-              className="bg-gray-100 hover:bg-gray-200 px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
-            >
-              🔄 Refresh Data
-            </button>
             <a
               href={OFFICIAL_SHOPEE_URL}
               target="_blank"
