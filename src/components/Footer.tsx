@@ -83,7 +83,7 @@ const Footer = () => {
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Layanan</h4>
             <ul className="space-y-3 text-xs text-slate-400">
-              <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Garansi Resmi 1-3 Tahun</li>
+              <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Garansi Resmi 1 Tahun</li>
               <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Pengiriman & Pemasangan Onsite</li>
               <li className="flex items-center gap-2"><CheckCircle2 size={15} className="text-green-500 shrink-0" /> Unit 100% Original & Baru</li>
             </ul>
