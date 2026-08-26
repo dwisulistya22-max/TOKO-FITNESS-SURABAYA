@@ -10,6 +10,13 @@ const DATASET = 'production';
 const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 const HOMEPAGE_LIMIT = 8;
 
+// 🛒 IKON TAS SHOPEE ASLI (SVG BRANDING)
+const ShopeeIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
+  </svg>
+);
+
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
@@ -255,7 +262,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                       rel="noopener noreferrer"
                       className="w-full bg-[#EE4D2D] hover:bg-[#d73211] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
                     >
-                      🧡 Beli di Shopee Official <ExternalLink size={18} />
+                      <ShopeeIcon className="w-5 h-5" /> Beli di Shopee Official <ExternalLink size={18} />
                     </a>
                   )}
 
@@ -295,7 +302,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             </p>
           </div>
           
-          {/* SISI KANAN HEADER PRODUK: HANYA ADA TOMBOL SHOPEE MALL */}
+          {/* TOMBOL SHOPEE MALL DI HEADER DENGAN LOGO SHOPEE ASLI */}
           <div className="flex gap-2">
             <a
               href={OFFICIAL_SHOPEE_URL}
@@ -303,7 +310,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               rel="noopener noreferrer"
               className="bg-[#EE4D2D] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md hover:bg-[#d73211] transition-colors"
             >
-              🧡 Shopee Mall
+              <ShopeeIcon className="w-5 h-5" /> Shopee Mall
             </a>
           </div>
         </div>
