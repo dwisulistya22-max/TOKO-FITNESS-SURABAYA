@@ -120,12 +120,12 @@ const Hero = () => {
 
             {/* BADGES SEJAJAR HORIZONTAL */}
             <div className="flex flex-row items-center gap-3 text-xs sm:text-sm text-white pt-1">
+              {/* BADGE GARANSI RESMI 1 TAHUN */}
               <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg whitespace-nowrap">
                 <ShieldCheck size={16} className="text-red-500 shrink-0" />
-                <span>Garansi Resmi 1-3 Tahun</span>
+                <span>Garansi Resmi 1 Tahun</span>
               </div>
               
-              {/* BADGE DIGANTI MENJADI UNIT 100% ORIGINAL & BARU */}
               <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 shadow-lg whitespace-nowrap">
                 <CheckCircle2 size={16} className="text-red-500 shrink-0" />
                 <span>Unit 100% Original & Baru</span>
