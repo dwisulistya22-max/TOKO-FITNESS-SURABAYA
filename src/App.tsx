@@ -22,6 +22,31 @@ function App() {
   const [passwordError, setPasswordError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // 🛡️ FITUR KEAMANAN: BLOKIR KLIK KANAN & SHORTCUT COPY/SAVE
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Blokir Ctrl+C (Copy), Ctrl+S (Save), Ctrl+U (View Source), F12 (Inspect Element)
+      if (
+        (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) ||
+        e.key === 'F12'
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault(); // Blokir Klik Kanan di seluruh halaman web
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
+
   useEffect(() => {
     const savedLogo = localStorage.getItem('fitness_logo');
     if (savedLogo && savedLogo.length > 5) {
@@ -90,9 +115,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900 relative">
+    <div className="min-h-screen bg-white font-sans text-gray-900 relative select-none">
 
-      {/* MODAL POP-UP PASSWORD ADMIN (MUNCUL DARI KLIK SUPER ADMIN LOGIN DI FOOTER) */}
+      {/* MODAL POP-UP PASSWORD ADMIN */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative border border-gray-100">
