@@ -8,7 +8,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
-import { Mail, MessageCircle } from 'lucide-react';
+import { Mail, MessageCircle, Download } from 'lucide-react';
 
 const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
 const ADMIN_PASSWORD = 'admin123'; 
@@ -22,10 +22,9 @@ function App() {
   const [passwordError, setPasswordError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 🛡️ FITUR KEAMANAN: BLOKIR KLIK KANAN & SHORTCUT COPY/SAVE
+  // 🛡️ FITUR KEAMANAN ANTI-COPY & ANTI-KLIK KANAN
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Blokir Ctrl+C (Copy), Ctrl+S (Save), Ctrl+U (View Source), F12 (Inspect Element)
       if (
         (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) ||
         e.key === 'F12'
@@ -35,7 +34,7 @@ function App() {
     };
 
     const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault(); // Blokir Klik Kanan di seluruh halaman web
+      e.preventDefault();
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -76,6 +75,46 @@ function App() {
     setPasswordInput('');
     setPasswordError(false);
     setIsAuthenticated(false);
+  };
+
+  // 📥 FUNGSI OTOMATIS DOWNLOAD FILE CSV KATALOG WA BUSINESS
+  const handleDownloadWACatalog = async () => {
+    const projectId = 'qi4rocc0';
+    const dataset = 'production';
+    const query = encodeURIComponent(`*[_type == "product"]{
+      _id, name, price, description,
+      "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, "")
+    }`);
+
+    try {
+      const res = await fetch(`https://${projectId}.api.sanity.io/v2024-01-01/data/query/${dataset}?query=${query}`);
+      const data = await res.json();
+
+      let csv = 'id,title,description,availability,condition,price,link,image_link,brand\n';
+
+      data.result.forEach((p: any) => {
+        const id = p._id;
+        const title = `"${(p.name || '').replace(/"/g, '""')}"`;
+        const desc = `"${(p.description || 'Peralatan fitness kualitas premium').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+        const avail = 'in stock';
+        const cond = 'new';
+        const price = `${p.price || 0} IDR`;
+        const link = 'https://tokofitnesssurabaya.com';
+        const img = p.image || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800';
+        const brand = '"Toko Fitness Surabaya"';
+
+        csv += `${id},${title},${desc},${avail},${cond},${price},${link},${img},${brand}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'katalog-whatsapp-fitness.csv';
+      a.click();
+    } catch (err) {
+      alert('Gagal mendownload CSV, pastikan koneksi lancar.');
+    }
   };
 
   // FUNGSI CHAT WA UNTUK PENAWARAN PAKET GYM
@@ -135,7 +174,7 @@ function App() {
                     🔐
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900">Akses Admin Panel</h3>
-                  <p className="text-sm text-gray-500 mt-1">Masukkan password untuk masuk ke Sanity Studio Surabaya Fitness</p>
+                  <p className="text-sm text-gray-500 mt-1">Masukkan password untuk masuk ke Sanity Studio & Fitur Admin</p>
                 </div>
 
                 <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -164,22 +203,33 @@ function App() {
                 </form>
               </div>
             ) : (
-              <div className="text-center py-4">
+              <div className="text-center py-4 space-y-4">
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
                   ✅
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Password Benar!</h3>
-                <p className="text-sm text-gray-600 mb-6">Silakan klik tombol di bawah untuk membuka Sanity Studio Anda:</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">Akses Admin Diverifikasi!</h3>
+                <p className="text-xs text-gray-500 mb-4">Pilih tindakan yang ingin Anda lakukan:</p>
 
+                {/* TOMBOL 1: BUKA SANITY */}
                 <a 
                   href={SANITY_STUDIO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleCloseModal}
-                  className="inline-block w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-xl transition-all text-center text-lg cursor-pointer"
+                  className="block w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-md transition-all text-center text-sm cursor-pointer"
                 >
-                  🚀 Buka Sanity Studio Sekarang &rarr;
+                  🚀 Buka Sanity Studio (Edit Barang) &rarr;
                 </a>
+
+                {/* TOMBOL 2: DOWNLOAD FILE KATALOG WA BUSINESS (BARU) */}
+                <button
+                  type="button"
+                  onClick={handleDownloadWACatalog}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all text-center text-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Download size={18} />
+                  <span>Download File Katalog WA (CSV)</span>
+                </button>
               </div>
             )}
           </div>
