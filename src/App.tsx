@@ -8,7 +8,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
-import { Mail, MessageCircle, Download } from 'lucide-react';
+import { Mail, MessageCircle, Download, CheckCircle2, Building2, Dumbbell, Trees, Sparkles } from 'lucide-react';
 
 const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
 const ADMIN_PASSWORD = 'admin123'; 
@@ -21,6 +21,7 @@ function App() {
   const [passwordError, setPasswordError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // 🛡️ FITUR KEAMANAN ANTI-COPY & ANTI-KLIK KANAN
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) || e.key === 'F12') {
@@ -34,6 +35,11 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
+  }, []);
+
+  useEffect(() => {
+    const savedLogo = localStorage.getItem('fitness_logo');
+    setLogo(savedLogo && savedLogo.length > 5 ? savedLogo : STORE_CONFIG.logo);
   }, []);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -52,9 +58,8 @@ function App() {
     setIsAuthenticated(false);
   };
 
-  // 📥 FUNGSI DOWNLOAD KATALOG WA (VERSI FINAL)
+  // 📥 FUNGSI DOWNLOAD KATALOG WA
   const handleDownloadWACatalog = async () => {
-    // Kita coba tarik dari kedua project ID Anda
     const ids = ['qi4rocc0', '856jrik3'];
     const dataset = 'production';
     const query = encodeURIComponent(`*[_type == "product"]{
@@ -76,7 +81,7 @@ function App() {
     }
 
     if (products.length === 0) {
-      alert("Gagal mendownload! Data produk tidak ditemukan atau koneksi diblokir Sanity. Pastikan sudah tambah CORS origin bintang (*)");
+      alert("Gagal mendownload! Data produk tidak ditemukan.");
       return;
     }
 
@@ -96,8 +101,28 @@ function App() {
     link.click();
   };
 
+  const handlePackageWA = (jenisPaket: string) => {
+    const waAdmin = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
+    let msg = '';
+    if (jenisPaket === 'commercial') {
+      msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya ingin konsultasi mengenai *PENAWARAN PAKET GYM COMMERCIAL / FITNESS CENTER*. Mohon informasi katalog & penawarannya.';
+    } else if (jenisPaket === 'outdoor') {
+      msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya ingin bertanya tentang *ALAT FITNESS OUTDOOR / TAMAN / FASILITAS PUBLIK*. Mohon kirimkan pricelist-nya.';
+    } else {
+      msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya berminat dengan *PAKET PROMO HOME GYM RUMAHAN*. Mohon rekomendasi paket terbaik untuk rumah saya.';
+    }
+    window.open(`https://wa.me/${waAdmin}?text=${msg}`, '_blank');
+  };
+
+  const handlePackageEmail = (jenis: string) => {
+    const emailToko = STORE_CONFIG.email || 'dwisulistya22@gmail.com';
+    window.location.href = `mailto:${emailToko}?subject=Permintaan Proposal Paket ${jenis} - Toko Fitness Surabaya`;
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 relative select-none">
+      
+      {/* MODAL ADMIN */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
@@ -125,6 +150,7 @@ function App() {
       )}
 
       <Navbar onSelectCategory={setActiveCategory} />
+      
       <main>
         <Hero />
         <Categories onSelectCategory={setActiveCategory} />
@@ -132,26 +158,171 @@ function App() {
         <WhyChooseUs />
         <Testimonials />
         
-        {/* SECTION PENAWARAN PAKET */}
-        <section className="py-20 bg-gradient-to-r from-red-700 to-red-800 text-white text-center">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-3xl sm:text-5xl font-black mb-12 uppercase italic">Penawaran Paket Khusus</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {['Commercial Gym', 'Home Gym', 'Outdoor Fitness'].map((item) => (
-                <div key={item} className="bg-gray-950/80 p-8 rounded-3xl border border-white/10 shadow-xl">
-                  <h3 className="text-xl font-bold mb-6">{item}</h3>
-                  <button onClick={() => window.open(`https://wa.me/6281332345448?text=Tanya%20Paket%20${item}`, '_blank')} className="w-full bg-green-500 py-3 rounded-xl font-bold mb-3 flex items-center justify-center gap-2">
-                    <MessageCircle size={18}/> Chat Admin
+        {/* 🔥 SECTION PENAWARAN PAKET KHUSUS (TAMPILAN MEWAH, FRIENDLY & SANGAT MENARIK) 🔥 */}
+        <section className="py-20 bg-gradient-to-br from-red-900 via-red-700 to-slate-950 text-white relative overflow-hidden">
+          
+          {/* ORNAMEN DEKORASI BACKGROUND */}
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-amber-300 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-4 border border-amber-300/30">
+              <Sparkles size={14} className="animate-spin" />
+              SPECIAL BUNDLE & BANTUAN LAYANAN LENGKAP
+            </div>
+
+            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight italic mb-4 leading-tight">
+              PENAWARAN PAKET KHUSUS
+            </h2>
+            
+            <p className="text-red-100 text-sm sm:text-base mb-14 max-w-2xl mx-auto leading-relaxed">
+              Konsultasikan kebutuhan pembuatan Gym, Alat Outdoor, hingga Home Gym Anda bersama tim ahli Toko Fitness Surabaya. Dapatkan penawaran harga distributor terbaik!
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto text-left">
+              
+              {/* 1. PAKET COMMERCIAL GYM */}
+              <div className="bg-slate-900/90 backdrop-blur-md p-8 rounded-3xl border border-slate-700/80 shadow-2xl flex flex-col justify-between hover:border-red-500/80 transition-all transform hover:-translate-y-1.5 group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-14 h-14 rounded-2xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center">
+                      <Building2 size={28} />
+                    </div>
+                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">
+                      Terpopuler
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white mb-2 group-hover:text-red-400 transition-colors">
+                    Commercial Gym
+                  </h3>
+                  <p className="text-slate-300 text-xs mb-6 leading-relaxed">
+                    Cocok untuk pembuatan Fitness Center, Gym Hotel, Apartment, Kantor, & Instansi Resmi.
+                  </p>
+
+                  {/* CHECKLIST MANFAAT */}
+                  <ul className="space-y-2.5 text-xs text-slate-300 mb-8 border-t border-slate-800 pt-4">
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Free Konsultasi & Layout Ruangan</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Garansi Resmi & Tim Teknisi</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Pengiriman & Pemasangan Onsite</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => handlePackageWA('commercial')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Konsultasi Gratis via WA</span>
                   </button>
-                  <button onClick={() => window.location.href='mailto:dwisulistya22@gmail.com'} className="w-full bg-transparent border border-white/20 py-3 rounded-xl font-bold hover:bg-white/10 transition-colors">
-                    Minta Proposal
+
+                  <button
+                    onClick={() => handlePackageEmail('commercial')}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 py-3 px-4 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Mail size={15} />
+                    <span>Kirim Proposal via Email</span>
                   </button>
                 </div>
-              ))}
+              </div>
+
+              {/* 2. PAKET HOME GYM RUMAHAN */}
+              <div className="bg-slate-900/90 backdrop-blur-md p-8 rounded-3xl border border-slate-700/80 shadow-2xl flex flex-col justify-between hover:border-red-500/80 transition-all transform hover:-translate-y-1.5 group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+                      <Dumbbell size={28} />
+                    </div>
+                    <span className="bg-amber-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">
+                      Hemat & Praktis
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white mb-2 group-hover:text-amber-400 transition-colors">
+                    Home Gym Rumahan
+                  </h3>
+                  <p className="text-slate-300 text-xs mb-6 leading-relaxed">
+                    Paket bundling hemat Treadmill, Multi-Gym, Bench, & Dumbbell untuk latihan pribadi di rumah.
+                  </p>
+
+                  <ul className="space-y-2.5 text-xs text-slate-300 mb-8 border-t border-slate-800 pt-4">
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Paket Kombinasi Hemat Tempat</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Unit 100% Baru & Bergaransi</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Gratis Pasang Wilayah Surabaya</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => handlePackageWA('homegym')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Konsultasi Paket WA</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePackageEmail('homegym')}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 py-3 px-4 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Mail size={15} />
+                    <span>Minta Katalog via Email</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. PAKET FITNESS OUTDOOR */}
+              <div className="bg-slate-900/90 backdrop-blur-md p-8 rounded-3xl border border-slate-700/80 shadow-2xl flex flex-col justify-between hover:border-red-500/80 transition-all transform hover:-translate-y-1.5 group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                      <Trees size={28} />
+                    </div>
+                    <span className="bg-emerald-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">
+                      Tahan Cuaca
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white mb-2 group-hover:text-emerald-400 transition-colors">
+                    Outdoor Fitness
+                  </h3>
+                  <p className="text-slate-300 text-xs mb-6 leading-relaxed">
+                    Alat olahraga luar ruangan bahan tebal anti-karat untuk Taman Kota, Perumahan, & Fasilitas Publik.
+                  </p>
+
+                  <ul className="space-y-2.5 text-xs text-slate-300 mb-8 border-t border-slate-800 pt-4">
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Bahan Tebal Anti-Karat & Panas</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Standar Keamanan Fasilitas Publik</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Siap Pengadaan Instansi / Developer</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => handlePackageWA('outdoor')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
+                  >
+                    <MessageCircle size={16} />
+                    <span>Penawaran Outdoor WA</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePackageEmail('outdoor')}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 py-3 px-4 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Mail size={15} />
+                    <span>Minta Proposal Email</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
+
           </div>
         </section>
       </main>
+      
       <Footer onLogin={() => setShowAdminModal(true)} />
       <WhatsAppButton />
     </div>
