@@ -11,7 +11,7 @@ import { STORE_CONFIG } from './data/config';
 import { MessageCircle, Download, CheckCircle2, Building2, Dumbbell, Trees, Sparkles } from 'lucide-react';
 
 const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
-const ADMIN_PASSWORD = 'admin123'; 
+const ADMIN_PASSWORD = 'dwie_300776'; 
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
