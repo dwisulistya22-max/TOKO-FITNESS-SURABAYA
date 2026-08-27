@@ -307,8 +307,12 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 uppercase tracking-tighter italic">
               Produk Pilihan
             </h2>
-            <p className="text-gray-500">
-              {activeCategory === 'Semua' ? 'Rekomendasi peralatan fitness pilihan terbaik.' : `Koleksi lengkap kategori ${activeCategory}`}
+            <p className="text-gray-500 font-medium">
+              {activeCategory === 'Semua' ? (
+                <>Rekomendasi peralatan fitness pilihan terbaik. <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-0.5 rounded-full ml-1">(Total {products.length} Barang)</span></>
+              ) : (
+                <>Koleksi lengkap kategori {activeCategory} <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-0.5 rounded-full ml-1">({categoryProducts.length} Barang)</span></>
+              )}
             </p>
           </div>
           
@@ -395,19 +399,23 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               ))}
             </div>
 
-            {activeCategory === 'Semua' && products.length > displayProducts.length && (
-              <div className="text-center mt-12">
+            {/* 📊 TOMBOL BUKA/TUTUP + JUMLAH TOTAL 152 BARANG DITAMPILKAN SELALU */}
+            {activeCategory === 'Semua' && products.length > HOMEPAGE_LIMIT && (
+              <div className="text-center mt-12 flex flex-col items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShowAll(!showAll)}
-                  className="inline-flex items-center gap-2 bg-gray-900 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-xl hover:shadow-red-600/30 transform hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 bg-gray-900 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-sm font-bold transition-all shadow-xl hover:shadow-red-600/30 transform hover:-translate-y-0.5 cursor-pointer"
                 >
                   {showAll ? (
                     <>Tampilkan Produk Pilihan Saja <ChevronUp size={18} /></>
                   ) : (
-                    <>Lihat Semua Katalog Produk ({products.length}) <ChevronDown size={18} /></>
+                    <>Lihat Semua Katalog Produk ({products.length} Barang) <ChevronDown size={18} /></>
                   )}
                 </button>
+                <span className="text-xs text-gray-400 font-semibold">
+                  Total {products.length} Produk Terdaftar di Katalog Toko Fitness Surabaya
+                </span>
               </div>
             )}
           </>
