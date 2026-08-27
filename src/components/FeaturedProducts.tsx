@@ -177,10 +177,10 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     className="w-full h-full object-contain transition-all pointer-events-none"
                   />
 
-                  {/* STEMPEL WATERMARK */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                    <div className="bg-black/80 text-white font-black text-xs sm:text-base uppercase tracking-widest px-4 py-2 rounded-2xl border-2 border-white/40 italic rotate-[-12deg] text-center shadow-2xl">
-                      OFFICIAL • TOKO FITNESS SURABAYA
+                  {/* 🌟 STEMPEL WATERMARK BARU: www.tokofitnesssurabaya.com */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25">
+                    <div className="bg-black/80 text-white font-black text-xs sm:text-sm tracking-wider px-4 py-2 rounded-2xl border-2 border-white/40 italic rotate-[-12deg] text-center shadow-2xl">
+                      www.tokofitnesssurabaya.com
                     </div>
                   </div>
 
@@ -204,7 +204,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   )}
                 </div>
 
-                {/* 📷 BARIS FOTO GALERI KECIL (THUMBNAILS DI BAWAH FOTO UTAMA) */}
+                {/* 📷 BARIS FOTO GALERI KECIL */}
                 {selected.images.length > 1 && (
                   <div className="flex gap-2.5 mt-3 overflow-x-auto pb-1 justify-center items-center">
                     {selected.images.map((img: string, idx: number) => (
@@ -349,10 +349,10 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none"
                       />
 
-                      {/* STEMPEL WATERMARK */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25">
-                        <div className="bg-black/70 text-white font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-xl border border-white/30 backdrop-blur-xs italic rotate-[-10deg] text-center shadow-lg">
-                          OFFICIAL • TOKO FITNESS SURABAYA
+                      {/* 🌟 STEMPEL WATERMARK BARU: www.tokofitnesssurabaya.com */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+                        <div className="bg-black/70 text-white font-black text-[9px] sm:text-[10px] tracking-wider px-3 py-1 rounded-xl border border-white/30 backdrop-blur-xs italic rotate-[-10deg] text-center shadow-lg">
+                          www.tokofitnesssurabaya.com
                         </div>
                       </div>
 
@@ -399,7 +399,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
               ))}
             </div>
 
-            {/* 📊 TOMBOL BUKA/TUTUP + JUMLAH TOTAL 152 BARANG DITAMPILKAN SELALU */}
+            {/* 📊 TOMBOL BUKA/TUTUP KATALOG */}
             {activeCategory === 'Semua' && products.length > HOMEPAGE_LIMIT && (
               <div className="text-center mt-12 flex flex-col items-center gap-3">
                 <button
