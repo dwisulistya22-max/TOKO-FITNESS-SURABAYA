@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, Mail, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
-import { STORE_CONFIG } from '../data/config';
+import { MapPin, Phone, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 
+const ShopeeIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
+  </svg>
+);
+
 const Footer = ({ onLogin }: { onLogin: () => void }) => {
   const [shopeeUrl, setShopeeUrl] = useState<string>(OFFICIAL_SHOPEE_URL);
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const [address, setAddress] = useState<string>('Jl. Dukuh Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya');
-  const [phones, setPhones] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchFooterData = async () => {
@@ -19,8 +23,7 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
           "shopee": coalesce(shopee, shopeeUrl, ""),
           "facebook": coalesce(facebook, ""),
           "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, ""),
-          "alamat": coalesce(alamat, address, ""),
-          "phone": coalesce(phone, whatsapp, telp, "")
+          "alamat": coalesce(alamat, address, "")
         }
       }`);
 
@@ -33,12 +36,6 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
             const storeData = data.result.store;
             if (storeData.logo) setLogoUrl(storeData.logo);
             if (storeData.alamat) setAddress(storeData.alamat);
-            
-            // Logika Mengambil Banyak Nomor HP
-            if (storeData.phone) {
-              const rawPhones = storeData.phone.split(/[,/&]/).map((p: string) => p.trim().replace(/\D/g, ''));
-              setPhones(rawPhones.filter((p: string) => p.length > 5));
-            }
 
             const rawLink = storeData.shopee || storeData.facebook || '';
             if (rawLink && rawLink.includes('shopee.co.id') && !rawLink.includes('id.sh.ee')) {
@@ -48,7 +45,7 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
             }
             break;
           }
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error('Error fetching footer data:', err); }
       }
     };
     fetchFooterData();
@@ -59,17 +56,21 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
           
+          {/* KOLOM 1 */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img src={logoUrl} alt="Logo" className="h-12 w-12 object-contain rounded-xl bg-white p-1" onError={(e: any) => { e.target.src = '/logo.png'; }} />
               <span className="font-black text-xl tracking-tight italic uppercase">TOKO FITNESS SURABAYA</span>
             </div>
-            <p className="text-slate-400 text-xs leading-relaxed">Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.</p>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.
+            </p>
             <a href={shopeeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5">
-              🧡 Shopee Official <ExternalLink size={14} />
+              <ShopeeIcon className="w-4 h-4" /> Shopee Official <ExternalLink size={14} />
             </a>
           </div>
 
+          {/* KOLOM 2 */}
           <div className="hidden lg:block">
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Tautan Cepat</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
@@ -79,6 +80,7 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
             </ul>
           </div>
 
+          {/* KOLOM 3 */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Layanan</h4>
             <ul className="space-y-3 text-xs text-slate-400">
@@ -88,6 +90,7 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
             </ul>
           </div>
 
+          {/* KOLOM 4: HUBUNGI KAMI (WA & MAPS SAJA - TANPA EMAIL) */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Hubungi Kami</h4>
             <ul className="space-y-3.5 text-xs text-slate-400">
@@ -97,21 +100,16 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
                   <div><span>{address}</span><span className="text-red-500 font-bold block mt-1 underline">📍 Buka Maps →</span></div>
                 </a>
               </li>
-
-              {/* Tampilkan Semua Nomor HP dari Sanity */}
-              {phones.map((num, idx) => (
-                <li key={idx}>
-                  <a href={`https://wa.me/${num}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-green-400 transition-colors group">
-                    <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
-                    <span>Admin {idx + 1}: <strong className="text-white">+{num}</strong></span>
-                  </a>
-                </li>
-              ))}
-
               <li>
-                <a href="mailto:dwisulistya22@gmail.com" className="flex items-center gap-2.5 hover:text-red-400 transition-colors group">
-                  <Mail size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span>dwisulistya22@gmail.com</span>
+                <a href="https://wa.me/6281332345448?text=Halo%20Admin%201%20Toko%20Fitness%20Surabaya" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-green-400 transition-colors group">
+                  <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Admin 1: <strong className="text-white group-hover:text-green-400 underline">+6281332345448</strong></span>
+                </a>
+              </li>
+              <li>
+                <a href="https://wa.me/6281235907956?text=Halo%20Admin%202%20Toko%20Fitness%20Surabaya" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-green-400 transition-colors group">
+                  <Phone size={16} className="text-red-500 shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Admin 2: <strong className="text-white group-hover:text-green-400 underline">+6281235907956</strong></span>
                 </a>
               </li>
             </ul>
