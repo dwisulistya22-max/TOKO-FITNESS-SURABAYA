@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Phone, ShoppingCart, Search, Menu, X, Flame, Sparkles, ArrowRight } from 'lucide-react';
+import { Phone, ShoppingCart, Search, Menu, X, Sparkles, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
 
+// 🎯 LINK SHOPEE RESMI ANDA
+const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
+
+// 🛒 IKON TAS SHOPEE ASLI
+const ShopeeIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
+  </svg>
+);
+
 const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
 
-  // STATE UNTUK POP-UP PENCARIAN (SEARCH)
+  // STATE SEARCH
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [allProducts, setAllProducts] = useState<any[]>([]);
-
-  const [promoText, setPromoText] = useState<string>('PROMO SETIAP HARI');
-  const [showPromo, setShowPromo] = useState<boolean>(true);
 
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
@@ -35,10 +42,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
         "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
           "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
         },
-        "promo": *[_type in ["storeConfig","storeInfo","settings","slider","banner"]][0]{
-          "tag": coalesce(promoText, tagPromo, promoTag, tag, ""),
-          "disable": coalesce(disablePromo, hidePromo, false)
-        },
         "products": *[_type == "product"] {
           _id, name, price,
           "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, "")
@@ -49,20 +52,9 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
         try {
           const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`, { cache: 'no-store' });
           const data = await res.json();
-          
           if (data?.result) {
             if (data.result.store?.logo) setLogoUrl(data.result.store.logo);
             if (data.result.products) setAllProducts(data.result.products);
-
-            const rawTag = data.result.promo?.tag;
-            const isDisabled = data.result.promo?.disable;
-
-            if (isDisabled || !rawTag || String(rawTag).trim() === '') {
-              setShowPromo(false);
-            } else {
-              setShowPromo(true);
-              setPromoText(String(rawTag).trim());
-            }
             break;
           }
         } catch (err) {
@@ -73,7 +65,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
     fetchNavbarData();
   }, []);
 
-  // Filter Hasil Pencarian
   const searchResults = searchQuery.trim() === '' 
     ? [] 
     : allProducts.filter(p => p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -113,10 +104,10 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
               <a href="#footer" className="hover:text-red-600 transition-colors">Tentang Kami</a>
             </nav>
 
-            {/* TOMBOL PENCARIAN & HUBUNGI KAMI */}
+            {/* TOMBOL PENCARIAN, HUBUNGI KAMI & TOMBOL SHOPEE LEDAKAN */}
             <div className="flex items-center gap-3">
               
-              {/* TOMBOL SEARCH AKTIF */}
+              {/* TOMBOL SEARCH */}
               <button 
                 type="button"
                 onClick={() => setSearchOpen(true)}
@@ -137,7 +128,10 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 </button>
               )}
 
+              {/* CONTAINER KANAN */}
               <div className="relative flex flex-col items-end">
+                
+                {/* TOMBOL HUBUNGI KAMI */}
                 <a
                   href={`https://wa.me/${waNumber}?text=Halo%20Admin%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20konsultasi`}
                   target="_blank"
@@ -147,35 +141,41 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                   <Phone size={15} /> Hubungi Kami
                 </a>
 
-                {showPromo && (
-                  <motion.div
-                    initial={{ scale: 0.9 }}
-                    animate={{
-                      scale: [1, 1.12, 1],
-                      boxShadow: [
-                        "0px 0px 0px rgba(239, 68, 68, 0)",
-                        "0px 0px 18px rgba(239, 68, 68, 0.9)",
-                        "0px 0px 0px rgba(239, 68, 68, 0)"
-                      ]
-                    }}
-                    transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-                    className="absolute top-full mt-1.5 right-0 z-30 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-red-600 to-amber-500 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 border-yellow-300 whitespace-nowrap cursor-pointer"
-                    onClick={() => {
-                      const productSection = document.getElementById('products');
-                      if (productSection) productSection.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-90"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
-                    </span>
-                    <Flame size={13} className="text-yellow-300 animate-bounce" />
-                    <span>"{promoText}"</span>
-                    <Sparkles size={12} className="text-yellow-200" />
-                  </motion.div>
-                )}
+                {/* 🔥 TOMBOL SHOPEE OFFICIAL BERGERAK (MODE LEDAKAN / CETAR) 🔥 */}
+                <motion.a
+                  href={OFFICIAL_SHOPEE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ scale: 0.9 }}
+                  animate={{
+                    scale: [1, 1.12, 1],
+                    boxShadow: [
+                      "0px 0px 0px rgba(238, 77, 45, 0)",
+                      "0px 0px 20px rgba(238, 77, 45, 0.95)",
+                      "0px 0px 0px rgba(238, 77, 45, 0)"
+                    ]
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 1.2,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute top-full mt-1.5 right-0 z-30 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-[#EE4D2D] to-red-600 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 border-yellow-300 whitespace-nowrap cursor-pointer hover:scale-105 transition-transform"
+                >
+                  {/* RADAR PING LEDAKAN */}
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-90"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
+                  </span>
+                  
+                  <ShopeeIcon className="w-3.5 h-3.5 text-yellow-300 animate-bounce" />
+                  <span>"🧡 Beli di Shopee Official"</span>
+                  <ExternalLink size={11} className="text-yellow-200" />
+                </motion.a>
+
               </div>
 
+              {/* MOBILE MENU HAMBURGER */}
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!mobileMenuOpen)}
@@ -188,7 +188,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
           </div>
         </div>
 
-        {/* MOBILE MENU */}
+        {/* MOBILE MENU DROPDOWN */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -208,7 +208,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
         </AnimatePresence>
       </header>
 
-      {/* POP-UP MODAL PENCARIAN SANGAT CEPAT */}
+      {/* POP-UP SEARCH */}
       <AnimatePresence>
         {searchOpen && (
           <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 px-4 bg-black/75 backdrop-blur-md">
@@ -237,7 +237,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 />
               </div>
 
-              {/* DAFTAR HASIL PENCARIAN */}
               <div className="max-h-96 overflow-y-auto space-y-3 pr-1">
                 {searchQuery.trim() !== '' && searchResults.length === 0 && (
                   <div className="text-center py-8 text-gray-500 font-medium">
@@ -262,17 +261,8 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                         <div className="text-red-600 font-black text-xs mt-0.5">{formatPrice(item.price)}</div>
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-gray-400 group-hover:text-red-600 flex items-center gap-1">
-                      Lihat <ArrowRight size={14} />
-                    </div>
                   </div>
                 ))}
-
-                {searchQuery.trim() === '' && (
-                  <div className="text-center py-6 text-xs text-gray-400 font-medium">
-                    Ketik kata kunci produk di atas untuk memulai pencarian cepat.
-                  </div>
-                )}
               </div>
             </motion.div>
           </div>
