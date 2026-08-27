@@ -8,7 +8,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
-import { Mail, MessageCircle, Download, CheckCircle2, Building2, Dumbbell, Trees, Sparkles } from 'lucide-react';
+import { MessageCircle, Download, CheckCircle2, Building2, Dumbbell, Trees, Sparkles } from 'lucide-react';
 
 const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
 const ADMIN_PASSWORD = 'admin123'; 
@@ -101,6 +101,7 @@ function App() {
     link.click();
   };
 
+  // FUNGSI CHAT WA UNTUK PENAWARAN PAKET
   const handlePackageWA = (jenisPaket: string) => {
     const waAdmin = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
     let msg = '';
@@ -112,11 +113,6 @@ function App() {
       msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya berminat dengan *PAKET PROMO HOME GYM RUMAHAN*. Mohon rekomendasi paket terbaik untuk rumah saya.';
     }
     window.open(`https://wa.me/${waAdmin}?text=${msg}`, '_blank');
-  };
-
-  const handlePackageEmail = (jenis: string) => {
-    const emailToko = STORE_CONFIG.email || 'dwisulistya22@gmail.com';
-    window.location.href = `mailto:${emailToko}?subject=Permintaan Proposal Paket ${jenis} - Toko Fitness Surabaya`;
   };
 
   return (
@@ -158,17 +154,16 @@ function App() {
         <WhyChooseUs />
         <Testimonials />
         
-        {/* 🔥 SECTION PENAWARAN PAKET KHUSUS (TAMPILAN MEWAH, FRIENDLY & SANGAT MENARIK) 🔥 */}
+        {/* 🔥 SECTION PENAWARAN PAKET KHUSUS (100% WA DIRECT - TANPA EMAIL) 🔥 */}
         <section className="py-20 bg-gradient-to-br from-red-900 via-red-700 to-slate-950 text-white relative overflow-hidden">
           
-          {/* ORNAMEN DEKORASI BACKGROUND */}
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
           
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-amber-300 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-4 border border-amber-300/30">
               <Sparkles size={14} className="animate-spin" />
-              SPECIAL BUNDLE & BANTUAN LAYANAN LENGKAP
+              SPECIAL BUNDLE & KONSULTASI LANGSUNG
             </div>
 
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight italic mb-4 leading-tight">
@@ -200,7 +195,6 @@ function App() {
                     Cocok untuk pembuatan Fitness Center, Gym Hotel, Apartment, Kantor, & Instansi Resmi.
                   </p>
 
-                  {/* CHECKLIST MANFAAT */}
                   <ul className="space-y-2.5 text-xs text-slate-300 mb-8 border-t border-slate-800 pt-4">
                     <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Free Konsultasi & Layout Ruangan</li>
                     <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-400 shrink-0"/> Garansi Resmi & Tim Teknisi</li>
@@ -208,23 +202,13 @@ function App() {
                   </ul>
                 </div>
 
-                <div className="space-y-2.5">
-                  <button
-                    onClick={() => handlePackageWA('commercial')}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
-                  >
-                    <MessageCircle size={16} />
-                    <span>Konsultasi Gratis via WA</span>
-                  </button>
-
-                  <button
-                    onClick={() => handlePackageEmail('commercial')}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 py-3 px-4 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Mail size={15} />
-                    <span>Kirim Proposal via Email</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => handlePackageWA('commercial')}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-4 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
+                >
+                  <MessageCircle size={18} />
+                  <span>Konsultasi Paket via WhatsApp</span>
+                </button>
               </div>
 
               {/* 2. PAKET HOME GYM RUMAHAN */}
@@ -253,23 +237,13 @@ function App() {
                   </ul>
                 </div>
 
-                <div className="space-y-2.5">
-                  <button
-                    onClick={() => handlePackageWA('homegym')}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
-                  >
-                    <MessageCircle size={16} />
-                    <span>Konsultasi Paket WA</span>
-                  </button>
-
-                  <button
-                    onClick={() => handlePackageEmail('homegym')}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 py-3 px-4 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Mail size={15} />
-                    <span>Minta Katalog via Email</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => handlePackageWA('homegym')}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-4 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
+                >
+                  <MessageCircle size={18} />
+                  <span>Konsultasi Paket via WhatsApp</span>
+                </button>
               </div>
 
               {/* 3. PAKET FITNESS OUTDOOR */}
@@ -298,23 +272,13 @@ function App() {
                   </ul>
                 </div>
 
-                <div className="space-y-2.5">
-                  <button
-                    onClick={() => handlePackageWA('outdoor')}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
-                  >
-                    <MessageCircle size={16} />
-                    <span>Penawaran Outdoor WA</span>
-                  </button>
-
-                  <button
-                    onClick={() => handlePackageEmail('outdoor')}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 py-3 px-4 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Mail size={15} />
-                    <span>Minta Proposal Email</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => handlePackageWA('outdoor')}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-4 px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-green-500/25"
+                >
+                  <MessageCircle size={18} />
+                  <span>Konsultasi Paket via WhatsApp</span>
+                </button>
               </div>
 
             </div>
