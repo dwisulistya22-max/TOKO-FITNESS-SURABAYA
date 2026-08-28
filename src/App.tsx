@@ -4,6 +4,7 @@ import Categories from './components/Categories';
 import FeaturedProducts from './components/FeaturedProducts';
 import WhyChooseUs from './components/WhyChooseUs';
 import Testimonials from './components/Testimonials';
+import FAQ from "./components/FAQ";
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
