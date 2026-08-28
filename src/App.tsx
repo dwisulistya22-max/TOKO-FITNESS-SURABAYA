@@ -154,6 +154,7 @@ function App() {
         <FeaturedProducts activeCategory={activeCategory} />
         <WhyChooseUs />
         <Testimonials />
+<FAQ />
         
         {/* 🔥 SECTION PENAWARAN PAKET KHUSUS (100% WA DIRECT - TANPA EMAIL) 🔥 */}
         <section className="py-20 bg-gradient-to-br from-red-900 via-red-700 to-slate-950 text-white relative overflow-hidden">
