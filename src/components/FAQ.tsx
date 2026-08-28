@@ -46,28 +46,9 @@ const faqs = [
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
-    })),
-  };
-
   return (
     <section className="w-full bg-gray-50 py-16 px-4" id="faq">
-      {/* FAQ Schema untuk Google */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             FAQ
@@ -77,31 +58,43 @@ export default function FAQ() {
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
+
             return (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
+                className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="w-full flex items-center justify-between text-left px-5 py-4 hover:bg-gray-50 transition"
+                  className="w-full flex items-center justify-between text-left px-6 py-5"
                 >
-                  <span className="font-semibold text-gray-900 pr-4">
+                  <span className="font-semibold text-gray-900 text-base md:text-lg pr-4">
                     {faq.question}
                   </span>
-                  <span className="text-red-600 text-xl font-bold">
+
+                  <span
+                    className={`flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold transition ${
+                      isOpen
+                        ? "bg-red-600 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
                     {isOpen ? "−" : "+"}
                   </span>
                 </button>
 
-                {isOpen && (
-                  <div className="px-5 pb-4 text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="px-6 pb-5 text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
                     {faq.answer}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
