@@ -44,42 +44,43 @@ const faqs = [
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  // null = SEMUA TERTUTUP SEJAK AWAL
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <section className="w-full bg-gray-50 py-16 px-4" id="faq">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             FAQ
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm md:text-base">
             Pertanyaan yang sering diajukan seputar Toko Fitness Surabaya
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
 
             return (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:border-red-300 transition"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="w-full flex items-center justify-between text-left px-6 py-5"
+                  className="w-full flex items-center justify-between text-left px-5 py-4 hover:bg-gray-50 transition"
                 >
-                  <span className="font-semibold text-gray-900 text-base md:text-lg pr-4">
+                  <span className="font-semibold text-gray-900 text-sm md:text-base pr-3">
                     {faq.question}
                   </span>
 
                   <span
-                    className={`flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold transition ${
+                    className={`flex items-center justify-center w-7 h-7 rounded-full text-base font-bold flex-shrink-0 transition ${
                       isOpen
                         ? "bg-red-600 text-white"
-                        : "bg-gray-100 text-gray-700"
+                        : "bg-gray-100 text-gray-600"
                     }`}
                   >
                     {isOpen ? "−" : "+"}
@@ -91,7 +92,7 @@ export default function FAQ() {
                     isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
-                  <div className="px-6 pb-5 text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+                  <div className="px-5 pb-4 text-gray-600 text-sm leading-relaxed border-t border-gray-100 pt-3">
                     {faq.answer}
                   </div>
                 </div>
