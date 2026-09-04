@@ -59,17 +59,27 @@ function App() {
     setIsAuthenticated(false);
   };
 
-  // 📥 FUNGSI DOWNLOAD KATALOG WA (FIXED + KATEGORI RAPI)
+  // 📥 FUNGSI DOWNLOAD KATALOG WA (KATEGORI OTOMATIS AMBIL DARI SANITY REFERENCE)
   const handleDownloadWACatalog = async () => {
     const ids = ['qi4rocc0', '856jrik3'];
     const dataset = 'production';
+    
+    // ✅ GROQ Query otomatis mengambil nama Kategori (Treadmill, Dumbbell, dll) dari Sanity
     const query = encodeURIComponent(
       `*[_type == "product"]{
         _id,
         name,
         price,
         description,
-        category,
+        "category": coalesce(
+          category->title,
+          category->name,
+          kategori->title,
+          kategori->name,
+          category,
+          kategori,
+          "Fitness"
+        ),
         "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, "")
       }`
     );
