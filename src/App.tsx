@@ -59,10 +59,7 @@ function App() {
     setIsAuthenticated(false);
   };
 
-  // 📥 FUNGSI DOWNLOAD KATALOG WA
-    // 📥 FUNGSI DOWNLOAD KATALOG WA (SUDAH DIPERBAIKI + KATEGORI)
-    // 📥 FUNGSI DOWNLOAD KATALOG WA (SUDAH DIPERBAIKI + KATEGORI)
-    // 📥 FUNGSI DOWNLOAD KATALOG WA (DENGAN KATEGORI)
+  // 📥 FUNGSI DOWNLOAD KATALOG WA (FIXED + KATEGORI RAPI)
   const handleDownloadWACatalog = async () => {
     const ids = ['qi4rocc0', '856jrik3'];
     const dataset = 'production';
@@ -145,8 +142,62 @@ function App() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // 📱 FUNGSI CHAT WA UNTUK PENAWARAN PAKET
+  const handlePackageWA = (jenisPaket: string) => {
+    const waAdmin = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
+    let msg = '';
+    if (jenisPaket === 'commercial') {
+      msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya ingin konsultasi mengenai *PENAWARAN PAKET GYM COMMERCIAL / FITNESS CENTER*. Mohon informasi katalog & penawarannya.';
+    } else if (jenisPaket === 'outdoor') {
+      msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya ingin bertanya tentang *ALAT FITNESS OUTDOOR / TAMAN / FASILITAS PUBLIK*. Mohon kirimkan pricelist-nya.';
+    } else {
+      msg = 'Halo Admin Toko Fitness Surabaya 👋%0A%0ASaya berminat dengan *PAKET PROMO HOME GYM RUMAHAN*. Mohon rekomendasi paket terbaik untuk rumah saya.';
+    }
+    window.open(`https://wa.me/${waAdmin}?text=${msg}`, '_blank');
+  };
+
+  return (
+    <div className="min-h-screen bg-white font-sans text-gray-900 relative select-none">
+      
+      {/* MODAL ADMIN */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+            <button onClick={handleCloseModal} className="absolute top-4 right-4 text-gray-400 text-2xl w-10 h-10 hover:bg-gray-100 rounded-full">×</button>
+            {!isAuthenticated ? (
+              <form onSubmit={handlePasswordSubmit} className="text-center">
+                <div className="text-3xl mb-3">🔐</div>
+                <h3 className="text-2xl font-bold mb-6">Admin Login</h3>
+                <input type="password" placeholder="Password Admin..." value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full px-4 py-3 rounded-xl border mb-4 text-center font-bold" autoFocus />
+                {passwordError && <p className="text-red-600 text-xs mb-4">❌ Password salah!</p>}
+                <button type="submit" className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl shadow-lg">Masuk</button>
+              </form>
+            ) : (
+              <div className="text-center space-y-4 py-4">
+                <div className="text-3xl mb-3">✅</div>
+                <h3 className="text-2xl font-bold">Akses Admin Berhasil</h3>
+                <a href={SANITY_STUDIO_URL} target="_blank" rel="noopener noreferrer" className="block w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-md">🚀 Buka Sanity Studio</a>
+                <button onClick={handleDownloadWACatalog} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer hover:bg-green-700 transition-colors">
+                  <Download size={20} /> Download CSV WA Business
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Navbar onSelectCategory={setActiveCategory} />
+      
+      <main>
+        <Hero />
+        <Categories onSelectCategory={setActiveCategory} />
+        <FeaturedProducts activeCategory={activeCategory} />
+        <WhyChooseUs />
+        <Testimonials />
+        <FAQ />
         
-        {/* 🔥 SECTION PENAWARAN PAKET KHUSUS (100% WA DIRECT - TANPA EMAIL) 🔥 */}
+        {/* 🔥 SECTION PENAWARAN PAKET KHUSUS 🔥 */}
         <section className="py-20 bg-gradient-to-br from-red-900 via-red-700 to-slate-950 text-white relative overflow-hidden">
           
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
