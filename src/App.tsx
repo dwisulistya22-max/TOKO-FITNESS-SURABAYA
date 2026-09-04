@@ -61,9 +61,134 @@ function App() {
 
   // 📥 FUNGSI DOWNLOAD KATALOG WA
     // 📥 FUNGSI DOWNLOAD KATALOG WA (SUDAH DIPERBAIKI + KATEGORI)
+    // 📥 FUNGSI DOWNLOAD KATALOG WA (SUDAH DIPERBAIKI + KATEGORI)
   const handleDownloadWACatalog = async () => {
     const ids = ['qi4rocc0', '856jrik3'];
     const dataset = 'production';
+
+    // ✅ Sekarang mengambil category juga dari Sanity
+    const query = encodeURIComponent(`*[_type == "product"]{
+      _id,
+      name,
+      price,
+      description,
+      category,
+      "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, "")
+    }`);
+
+    let products: any[] = [];
+
+    for (const id of ids) {
+      try {
+        const res = await fetch(
+          `https://${id}.api.sanity.io/v2024-01-01/data/query/${dataset}?query=${query}`,
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+        if (data.result && data.result.length > 0) {
+          products = data.result;
+          break;
+        }
+      } catch (err) {
+        console.error('Gagal ambil data dari ID:', id);
+      }
+    }
+
+    if (products.length === 0) {
+      alert('Gagal mendownload! Data produk tidak ditemukan.');
+      return;
+    }
+
+    // Helper: amankan teks agar CSV tidak berantakan
+    const esc = (val: any) => {
+      const str = String(val ?? '')
+        .replace(/"/g, '""')
+        .replace(/\r?\n/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return `"${str}"`;
+    };
+
+    // Helper: format kategori untuk WA Business
+    // Hasilnya: "Cardio > Treadmill" atau nama kategori apa adanya
+    const formatProductType = (category: string, name: string) => {
+      const cat = (category || 'Fitness').trim();
+      // Jika nama produk mengandung kata kunci, buat sub-kategori lebih spesifik
+      const lower = (name || '').toLowerCase();
+      let sub = '';
+      if (lower.includes('treadmill')) sub = 'Treadmill';
+      else if (lower.includes('sepeda') || lower.includes('bike')) sub = 'Sepeda Statis';
+      else if (lower.includes('dumbbell') || lower.includes('dumbel')) sub = 'Dumbbell';
+      else if (lower.includes('barbell')) sub = 'Barbell';
+      else if (lower.includes('bench')) sub = 'Bench';
+      else if (lower.includes('rack') || lower.includes('smith')) sub = 'Power Rack';
+      else if (lower.includes('leg press')) sub = 'Leg Press';
+      else if (lower.includes('multi gym') || lower.includes('multigym')) sub = 'Multi Gym';
+      else if (lower.includes('matras') || lower.includes('mat ')) sub = 'Matras';
+      else if (lower.includes('rubber') || lower.includes('flooring')) sub = 'Flooring';
+      else if (lower.includes('plate') || lower.includes('beban')) sub = 'Weight Plate';
+      else if (lower.includes('pull up') || lower.includes('pullup')) sub = 'Pull Up Bar';
+
+      return sub ? `${cat} > ${sub}` : cat;
+    };
+
+    // ✅ Header resmi Meta/WA Catalog + product_type
+    const headers = [
+      'id',
+      'title',
+      'description',
+      'availability',
+      'condition',
+      'price',
+      'link',
+      'image_link',
+      'brand',
+      'product_type',
+      'google_product_category',
+    ];
+
+    let csv = headers.join(',') + '\n';
+
+    products.forEach((p: any) => {
+      const title = p.name || 'Produk Fitness';
+      const desc = p.description || 'Peralatan fitness premium dari Toko Fitness Surabaya';
+      const priceNum = Number(p.price) || 0;
+      const price = `${priceNum} IDR`; // format wajib Meta
+      const img =
+        p.image ||
+        'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800';
+      const productType = formatProductType(p.category, p.name);
+      // 4997 = Sporting Goods > Exercise & Fitness (kode resmi Google)
+      const googleCat = '4997';
+
+      const row = [
+        esc(p._id),
+        esc(title),
+        esc(desc),
+        esc('in stock'),
+        esc('new'),
+        esc(price),
+        esc('https://tokofitnesssurabaya.com'),
+        esc(img),
+        esc('Toko Fitness Surabaya'),
+        esc(productType),       // ← INI YANG BIKIN KATEGORI RAPI DI WA
+        esc(googleCat),
+      ];
+
+      csv += row.join(',') + '\n';
+    });
+
+    // Tambahkan BOM agar Excel Indonesia tidak berantakan
+    const blob = new Blob(['\uFEFF' + csv], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `katalog-wa-surabaya-fitness.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
     // ✅ Sekarang mengambil category juga dari Sanity
     const query = encodeURIComponent(`*[_type == "product"]{
