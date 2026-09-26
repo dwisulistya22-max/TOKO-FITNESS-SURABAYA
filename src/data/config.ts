@@ -8,7 +8,7 @@ export const STORE_CONFIG = {
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
   shopee: "https://shopee.co.id/fitnesssurabaya",
   // Link publik toko Lazada (bukan sellercenter). Sesuaikan slug toko jika berbeda.
-  lazada: "https://www.lazada.co.id/shop/fitnesssurabaya",
+  lazada: "https://www.lazada.co.id/shop/vyokhg3h",
   tokopedia: "",
   tiktok: "",
   hero: {
