@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Share2, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Share2, Check, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
-
-const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
-const DATASET = 'production';
+import { useCatalog } from '../catalog';
+import { productDomId, productMatchesQuery, searchRelevance } from '../utils/productSearch';
 
 // 🎯 LINK SHOPEE RESMI ANDA
 const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
@@ -21,90 +20,34 @@ const formatPrice = (price: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
 const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
-  const [products, setProducts] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any>(null);
+  const {
+    products,
+    loading,
+    error,
+    reload,
+    selected,
+    highlightId,
+    focusToken,
+    searchQuery,
+    setSearchQuery,
+    openProduct,
+    isStrayClick,
+    closeProduct,
+    clearSearch,
+  } = useCatalog();
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [copied, setCopied] = useState(false);
+  const scrolledToken = useRef<string | null>(null);
 
-  const fetchProductsAndStore = async () => {
-    setLoading(true);
-
-    const productQuery = encodeURIComponent(`*[_type == "product"] | order(_createdAt desc) {
-      _id, name, price, description, specs, tag, rating, reviews,
-      shopeeUrl, shopee, order, sortOrder, urutan,
-      isFeatured, featured, isUnggulan, showOnHome,
-      "mainImage": coalesce(image.asset->url, foto.asset->url, photo.asset->url, ""),
-      "galleryImages": coalesce(images[].asset->url, gallery[].asset->url, photos[].asset->url, []),
-      "category": coalesce(category->title, category->name, category, "Umum")
-    }`);
-
-    for (const id of PROJECT_IDS) {
-      try {
-        const prodRes = await fetch(
-          `https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${productQuery}`,
-          { cache: 'no-store' }
-        );
-        const prodData = await prodRes.json();
-
-        if (prodData?.result?.length) {
-          const mappedProducts = prodData.result.map((item: any) => {
-            const allImages: string[] = [];
-            if (item.mainImage) allImages.push(item.mainImage);
-            if (Array.isArray(item.galleryImages)) {
-              item.galleryImages.forEach((img: string) => {
-                if (img && !allImages.includes(img)) allImages.push(img);
-              });
-            }
-            if (allImages.length === 0) {
-              allImages.push('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800');
-            }
-
-            const productRating = Number(item.rating || 5);
-            const isFeatured = Boolean(
-              productRating >= 5 || item.isFeatured || item.featured || item.isUnggulan
-            );
-
-            let priorityNumber = 999;
-            if (item.order !== undefined) priorityNumber = Number(item.order);
-
-            return {
-              id: item._id,
-              name: item.name || 'Produk Fitness',
-              price: item.price || 0,
-              description: item.description || '',
-              specs: item.specs || '',
-              tag: item.tag || '',
-              rating: productRating,
-              reviews: item.reviews || 0,
-              order: priorityNumber,
-              isFeatured,
-              images: allImages,
-              category: item.category || 'Umum',
-              shopeeUrl: item.shopeeUrl || item.shopee || ''
-            };
-          });
-
-          mappedProducts.sort((a: any, b: any) => a.order - b.order);
-          setProducts(mappedProducts);
-          break;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchProductsAndStore(); }, []);
   useEffect(() => { setShowAll(false); }, [activeCategory]);
+  useEffect(() => { setActiveImgIndex(0); setCopied(false); }, [selected?.id]);
 
   const openDetail = (product: any) => {
-    setSelected(product);
-    setActiveImgIndex(0);
-    setCopied(false);
+    if (isStrayClick()) return;
+    openProduct(product);
   };
+  const closeDetail = () => closeProduct();
 
   const handleShareProduct = (product: any) => {
     const shareText = `Cek *${product.name}* harga ${formatPrice(product.price)} hanya di Toko Fitness Surabaya!\n\nLihat selengkapnya di website kami:\nhttps://tokofitnesssurabaya.com`;
@@ -124,6 +67,9 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
     }
   };
 
+  const normalizedQuery = searchQuery.trim();
+  const focusProduct = selected && normalizedQuery && (selected.id === highlightId) ? selected : null;
+
   const categoryProducts =
     !activeCategory || activeCategory === 'Semua'
       ? products
@@ -134,7 +80,17 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const featuredOnly = products.filter((p) => p.isFeatured);
 
   let displayProducts: any[] = [];
-  if (activeCategory === 'Semua') {
+  if (normalizedQuery) {
+    displayProducts = products
+      .filter((product) => productMatchesQuery(product, normalizedQuery) || product.id === focusProduct?.id)
+      .sort((a, b) => {
+        if (focusProduct) {
+          if (a.id === focusProduct.id) return -1;
+          if (b.id === focusProduct.id) return 1;
+        }
+        return searchRelevance(a, normalizedQuery) - searchRelevance(b, normalizedQuery);
+      });
+  } else if (activeCategory === 'Semua') {
     displayProducts = showAll
       ? products
       : (featuredOnly.length > 0 ? featuredOnly.slice(0, HOMEPAGE_LIMIT) : products.slice(0, 4));
@@ -145,12 +101,12 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
   return (
-    <section id="products" className="py-20 bg-white select-none" onContextMenu={(e) => e.preventDefault()}>
+    <section id="products" className="py-20 bg-white select-none scroll-mt-24" onContextMenu={(e) => e.preventDefault()}>
       
       {/* MODAL DETAIL PRODUK + GALERI LENGKAP */}
       <AnimatePresence>
         {selected && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -159,7 +115,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             >
               <button
                 type="button"
-                onClick={() => setSelected(null)}
+                onClick={closeDetail}
                 className="absolute top-4 right-4 z-20 bg-white/90 p-2 rounded-full shadow-lg hover:bg-red-600 hover:text-white transition-all"
               >
                 <X size={22} />
@@ -171,7 +127,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                   
                   {/* FOTO UTAMA */}
                   <img
-                    src={selected.images[activeImgIndex]}
+                    src={selected.images?.[activeImgIndex] || selected.images?.[0]}
                     alt={selected.name}
                     draggable={false}
                     className="w-full h-full object-contain transition-all pointer-events-none"
@@ -305,10 +261,12 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
           <div>
             <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 uppercase tracking-tighter italic">
-              Produk Pilihan
+              {searchQuery ? 'Hasil Pencarian' : 'Produk Pilihan'}
             </h2>
             <p className="text-gray-500 font-medium">
-              {activeCategory === 'Semua' ? (
+              {normalizedQuery ? (
+                <>Menampilkan produk untuk "<span className="text-gray-900 font-bold">{normalizedQuery}</span>" <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-0.5 rounded-full ml-1">({displayProducts.length} Barang)</span></>
+              ) : activeCategory === 'Semua' ? (
                 <>Rekomendasi peralatan fitness pilihan terbaik. <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-0.5 rounded-full ml-1">(Total {products.length} Barang)</span></>
               ) : (
                 <>Koleksi lengkap kategori {activeCategory} <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-0.5 rounded-full ml-1">({categoryProducts.length} Barang)</span></>
@@ -317,6 +275,15 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           </div>
           
           <div className="flex gap-2">
+            {normalizedQuery && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="bg-white text-gray-800 border border-gray-200 px-5 py-2.5 rounded-xl text-sm font-bold hover:border-red-300 hover:text-red-600 transition-colors"
+              >
+                Hapus Pencarian
+              </button>
+            )}
             <a
               href={OFFICIAL_SHOPEE_URL}
               target="_blank"
@@ -328,17 +295,70 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
           </div>
         </div>
 
+        <form
+          className="mb-8"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (displayProducts.length === 1) openProduct(displayProducts[0], normalizedQuery);
+            document.getElementById('product-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
+          <label className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-red-500 focus-within:bg-white">
+            <Search size={18} className="text-red-600 shrink-0" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cari produk di katalog, contoh: Treadmill BM, Dumbbell..."
+              className="w-full bg-transparent text-sm sm:text-base font-semibold text-gray-900 outline-none placeholder:font-normal placeholder:text-gray-400"
+            />
+          </label>
+          {normalizedQuery && (
+            <p className="mt-2 text-xs text-gray-500">
+              Katalog di bawah ini hanya menampilkan produk yang cocok, bukan produk pertama.
+            </p>
+          )}
+        </form>
+
         {loading ? (
           <div className="text-center py-20 text-red-600 font-bold animate-pulse text-xl">
-            ⏳ Menghubungkan ke Sanity Studio...
+            ⏳ Katalog masih dimuat. Tunggu sebentar, jangan ditutup dulu.
+          </div>
+        ) : error && products.length === 0 ? (
+          <div className="text-center py-16 text-gray-500 font-medium">
+            {error}
+            <button type="button" onClick={reload} className="block mx-auto mt-4 bg-red-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold">
+              Muat ulang katalog
+            </button>
           </div>
         ) : (
           <>
+            <div id="product-results">
+            {displayProducts.length === 0 ? (
+              <div className="text-center py-16 text-gray-500 font-medium">
+                Tidak ada produk untuk "<span className="text-red-600 font-bold">{normalizedQuery || activeCategory}</span>".
+                {normalizedQuery && (
+                  <button type="button" onClick={clearSearch} className="block mx-auto mt-4 text-sm font-bold text-red-600">
+                    Kembali ke produk pilihan
+                  </button>
+                )}
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {displayProducts.map((p: any) => (
                 <div
                   key={p.id}
-                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group"
+                  id={productDomId(p.id)}
+                  ref={(el) => {
+                    if (!el || highlightId !== p.id) return;
+                    const token = `${p.id}:${focusToken}`;
+                    if (scrolledToken.current === token) return;
+                    scrolledToken.current = token;
+                    window.setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+                  }}
+                  className={`bg-white rounded-3xl border overflow-hidden hover:shadow-2xl transition-all flex flex-col justify-between group scroll-mt-28 ${
+                    highlightId === p.id ? 'border-red-500 ring-4 ring-red-500 shadow-2xl' : 'border-gray-100'
+                  }`}
                 >
                   <div>
                     <div className="relative aspect-square bg-gray-50 overflow-hidden select-none">
@@ -359,6 +379,12 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                       {p.tag && (
                         <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
                           {p.tag}
+                        </span>
+                      )}
+
+                      {highlightId === p.id && (
+                        <span className="absolute top-4 right-4 z-10 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
+                          Produk dicari
                         </span>
                       )}
 
@@ -398,9 +424,11 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 </div>
               ))}
             </div>
+            )}
+            </div>
 
             {/* 📊 TOMBOL BUKA/TUTUP KATALOG */}
-            {activeCategory === 'Semua' && products.length > HOMEPAGE_LIMIT && (
+            {!searchQuery && activeCategory === 'Semua' && products.length > HOMEPAGE_LIMIT && (
               <div className="text-center mt-12 flex flex-col items-center gap-3">
                 <button
                   type="button"

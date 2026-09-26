@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Phone, ShoppingCart, Search, Menu, X, Sparkles, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
+import { useCatalog } from '../catalog';
+import { productMatchesQuery, searchRelevance } from '../utils/productSearch';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
@@ -20,11 +22,12 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
+  const { products, loading: catalogLoading, openProduct, searchQuery, setSearchQuery, isStrayClick } = useCatalog();
+  const [clickShield, setClickShield] = useState(false);
 
   // STATE SEARCH
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [activeResult, setActiveResult] = useState(-1);
 
   const waNumber = (STORE_CONFIG.phone || '6281332345448').split(/[/,&\n]/)[0].replace(/\D/g, '');
 
@@ -41,10 +44,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
       const query = encodeURIComponent(`{
         "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
           "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, "")
-        },
-        "products": *[_type == "product"] {
-          _id, name, price,
-          "image": coalesce(image.asset->url, foto.asset->url, photo.asset->url, "")
         }
       }`);
 
@@ -52,9 +51,8 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
         try {
           const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`, { cache: 'no-store' });
           const data = await res.json();
-          if (data?.result) {
-            if (data.result.store?.logo) setLogoUrl(data.result.store.logo);
-            if (data.result.products) setAllProducts(data.result.products);
+          if (data?.result?.store?.logo) {
+            setLogoUrl(data.result.store.logo);
             break;
           }
         } catch (err) {
@@ -65,9 +63,31 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
     fetchNavbarData();
   }, []);
 
-  const searchResults = searchQuery.trim() === '' 
-    ? [] 
-    : allProducts.filter(p => p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const searchResults = searchQuery.trim() === ''
+    ? []
+    : [...products]
+        .filter((product) => productMatchesQuery(product, searchQuery))
+        .sort((a, b) => searchRelevance(a, searchQuery) - searchRelevance(b, searchQuery));
+
+  const showSearchResults = () => {
+    setSearchOpen(false);
+    setActiveResult(-1);
+    window.setTimeout(() => {
+      document.getElementById('product-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  };
+
+  const openSearchResult = (item: any) => {
+    if (!item) return;
+    const query = searchQuery.trim();
+    setClickShield(true);
+    setActiveResult(-1);
+    openProduct(item, query || item.name);
+    window.setTimeout(() => {
+      setSearchOpen(false);
+      window.setTimeout(() => setClickShield(false), 500);
+    }, 50);
+  };
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
@@ -99,7 +119,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
             {/* NAVIGASI */}
             <nav className="hidden md:flex items-center gap-8 font-bold text-sm text-gray-700">
               <a href="#hero" className="hover:text-red-600 transition-colors">Beranda</a>
-              <a href="#products" onClick={() => onSelectCategory && onSelectCategory('Semua')} className="hover:text-red-600 transition-colors">Produk</a>
+              <a href="#products" onClick={(event) => { if (isStrayClick()) { event.preventDefault(); return; } onSelectCategory && onSelectCategory('Semua'); }} className="hover:text-red-600 transition-colors">Produk</a>
               <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
               <a href="#footer" className="hover:text-red-600 transition-colors">Tentang Kami</a>
             </nav>
@@ -199,7 +219,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
             >
               <div className="px-4 pt-3 pb-6 space-y-3 font-bold text-sm text-gray-800">
                 <a href="#hero" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Beranda</a>
-                <a href="#products" onClick={() => { setIsMobileMenuOpen(false); onSelectCategory && onSelectCategory('Semua'); }} className="block py-2 border-b border-gray-50">Produk</a>
+                <a href="#products" onClick={(event) => { if (isStrayClick()) { event.preventDefault(); return; } setIsMobileMenuOpen(false); onSelectCategory && onSelectCategory('Semua'); }} className="block py-2 border-b border-gray-50">Produk</a>
                 <a href="#categories" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Kategori</a>
                 <a href="#footer" onClick={() => setIsMobileMenuOpen(false)} className="block py-2">Tentang Kami</a>
               </div>
@@ -209,6 +229,14 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
       </header>
 
       {/* POP-UP SEARCH */}
+      {clickShield && (
+        <div
+          className="fixed inset-0 z-[140]"
+          onMouseDown={(event) => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}
+        />
+      )}
+
       <AnimatePresence>
         {searchOpen && (
           <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 px-4 bg-black/75 backdrop-blur-md">
@@ -225,44 +253,103 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 <X size={22} />
               </button>
 
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const picked = activeResult >= 0 ? searchResults[activeResult] : null;
+                  if (picked) openSearchResult(picked);
+                  else showSearchResults();
+                }}
+              >
               <div className="flex items-center gap-3 border-b-2 border-red-600 pb-3 mb-6 pr-10">
                 <Search size={24} className="text-red-600 shrink-0" />
                 <input 
                   type="text"
                   placeholder="Ketik nama alat fitness (contoh: Treadmill, Dumbbell)..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setActiveResult(-1);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setActiveResult((index) => Math.min(index + 1, Math.max(searchResults.length - 1, 0)));
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setActiveResult((index) => Math.max(index - 1, 0));
+                    } else if (e.key === 'Escape') {
+                      setSearchOpen(false);
+                    }
+                  }}
                   autoFocus
                   className="w-full text-lg font-bold text-gray-900 outline-none placeholder:text-gray-400 placeholder:font-normal"
                 />
               </div>
+              </form>
 
               <div className="max-h-96 overflow-y-auto space-y-3 pr-1">
-                {searchQuery.trim() !== '' && searchResults.length === 0 && (
+                {catalogLoading && (
+                  <div className="text-center py-8 text-gray-500 font-medium">
+                    Katalog masih dimuat. Tunggu sebentar, lalu hasil pencarian akan muncul.
+                  </div>
+                )}
+
+                {!catalogLoading && searchQuery.trim() !== '' && searchResults.length === 0 && (
                   <div className="text-center py-8 text-gray-500 font-medium">
                     Tidak ditemukan produk dengan kata kunci "<span className="text-red-600 font-bold">{searchQuery}</span>"
                   </div>
                 )}
 
-                {searchResults.map((item) => (
-                  <div 
-                    key={item._id}
-                    onClick={() => {
-                      setSearchOpen(false);
-                      const productSection = document.getElementById('products');
-                      if (productSection) productSection.scrollIntoView({ behavior: 'smooth' });
+                {searchQuery.trim() !== '' && searchResults.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 px-1">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                      {searchResults.length} produk ditemukan
+                    </div>
+                    <button
+                      type="button"
+                      onClick={showSearchResults}
+                      className="text-[11px] font-black uppercase tracking-wider text-red-600"
+                    >
+                      Lihat di katalog
+                    </button>
+                  </div>
+                )}
+
+                {searchResults.map((item, index) => {
+                  const categoryLabel = item.category || '';
+                  return (
+                  <button
+                    type="button"
+                    key={item.id || `${item.name}-${index}`}
+                    onMouseEnter={() => setActiveResult(index)}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openSearchResult(item);
                     }}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-gray-200 group"
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all border group text-left ${
+                      index === activeResult
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-white border-transparent hover:bg-gray-50 hover:border-gray-200'
+                    }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <img src={item.image || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=200'} alt={item.name} className="w-14 h-14 object-cover rounded-xl bg-gray-100" />
-                      <div>
-                        <h4 className="font-bold text-gray-900 text-sm group-hover:text-red-600 transition-colors">{item.name}</h4>
+                    <div className="flex items-center gap-4 min-w-0">
+                      <img src={item.images?.[0] || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=200'} alt={item.name} className="w-14 h-14 object-cover rounded-xl bg-gray-100 shrink-0" />
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-gray-900 text-sm group-hover:text-red-600 transition-colors truncate">{item.name}</h4>
+                        {categoryLabel && (
+                          <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mt-0.5 truncate">{categoryLabel}</div>
+                        )}
                         <div className="text-red-600 font-black text-xs mt-0.5">{formatPrice(item.price)}</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                    <span className="shrink-0 ml-3 text-[10px] font-black uppercase tracking-wider text-white bg-red-600 px-3 py-1.5 rounded-full">
+                      Buka
+                    </span>
+                  </button>
+                  );
+                })}
               </div>
             </motion.div>
           </div>

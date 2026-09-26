@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
+import { useCatalog } from './catalog';
 import { MessageCircle, Download, CheckCircle2, Building2, Dumbbell, Trees, Sparkles } from 'lucide-react';
 
 const SANITY_STUDIO_URL = 'https://sanity.io/@oHJoh6fdC/studio/qi4rocc0';
@@ -16,6 +17,7 @@ const ADMIN_PASSWORD = 'dwie_300776';
 
 function App() {
   const [activeCategory, setActiveCategory] = useState('Semua');
+  const { clearSearch, isStrayClick } = useCatalog();
   const [logo, setLogo] = useState(STORE_CONFIG.logo);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -42,6 +44,12 @@ function App() {
     const savedLogo = localStorage.getItem('fitness_logo');
     setLogo(savedLogo && savedLogo.length > 5 ? savedLogo : STORE_CONFIG.logo);
   }, []);
+
+  const handleSelectCategory = (category: string) => {
+    if (isStrayClick()) return;
+    setActiveCategory(category);
+    clearSearch();
+  };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,11 +205,11 @@ function App() {
         </div>
       )}
 
-      <Navbar onSelectCategory={setActiveCategory} />
+      <Navbar onSelectCategory={handleSelectCategory} />
       
       <main>
         <Hero />
-        <Categories onSelectCategory={setActiveCategory} />
+        <Categories onSelectCategory={handleSelectCategory} />
         <FeaturedProducts activeCategory={activeCategory} />
         <WhyChooseUs />
         <Testimonials />
