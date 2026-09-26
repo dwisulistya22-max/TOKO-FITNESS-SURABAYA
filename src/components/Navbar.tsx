@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 import { useCatalog } from '../catalog';
 import { productMatchesQuery, searchRelevance } from '../utils/productSearch';
-import MarketplaceButtons from './MarketplaceButtons';
 import { useMarketplaces, marketplaceHref } from '../utils/marketplaces';
 import { MARKETPLACE_ICONS } from './MarketplaceIcons';
 
@@ -143,14 +142,65 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 </button>
               )}
 
-              <a
-                href={`https://wa.me/${waNumber}?text=Halo%20Admin%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20konsultasi`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-full shadow-md flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95"
-              >
-                <Phone size={15} /> Hubungi Kami
-              </a>
+              <div className="relative flex flex-col items-end">
+                <a
+                  href={`https://wa.me/${waNumber}?text=Halo%20Admin%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20konsultasi`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm px-4 sm:px-6 py-2.5 rounded-full shadow-md flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95"
+                >
+                  <Phone size={15} /> Hubungi Kami
+                </a>
+
+                <div className="absolute top-full mt-1.5 right-0 z-30 flex flex-col items-end gap-1.5 sm:flex-row">
+                  {marketplaces.filter((item) => item.id === 'shopee' || item.id === 'lazada').map((item, index) => {
+                    const Icon = MARKETPLACE_ICONS[item.id];
+                    const isShopee = item.id === 'shopee';
+                    return (
+                      <motion.a
+                        key={item.id}
+                        href={marketplaceHref(item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        initial={{ scale: 0.9 }}
+                        animate={{
+                          scale: [1, 1.08, 1],
+                          boxShadow: isShopee
+                            ? [
+                                '0px 0px 0px rgba(238, 77, 45, 0)',
+                                '0px 0px 18px rgba(238, 77, 45, 0.95)',
+                                '0px 0px 0px rgba(238, 77, 45, 0)',
+                              ]
+                            : [
+                                '0px 0px 0px rgba(245, 114, 36, 0)',
+                                '0px 0px 18px rgba(245, 114, 36, 0.95)',
+                                '0px 0px 0px rgba(245, 114, 36, 0)',
+                              ],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 1.2,
+                          delay: index * 0.15,
+                          ease: 'easeInOut',
+                        }}
+                        className={`inline-flex items-center gap-1.5 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 whitespace-nowrap cursor-pointer hover:scale-105 transition-transform ${
+                          isShopee
+                            ? 'bg-gradient-to-r from-amber-400 via-[#EE4D2D] to-red-600 border-yellow-300'
+                            : 'bg-gradient-to-r from-[#F57224] via-[#0F146D] to-[#1a237e] border-orange-300'
+                        }`}
+                      >
+                        <span className="relative flex h-2 w-2">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isShopee ? 'bg-yellow-200' : 'bg-orange-200'} opacity-90`}></span>
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${isShopee ? 'bg-yellow-300' : 'bg-orange-300'}`}></span>
+                        </span>
+                        <Icon className={`w-3.5 h-3.5 ${isShopee ? 'text-yellow-300' : 'text-orange-300'} animate-bounce`} />
+                        <span>{isShopee ? 'Beli di Shopee Official' : 'Beli di Lazada Official'}</span>
+                        <ExternalLink size={11} className={isShopee ? 'text-yellow-200' : 'text-orange-200'} />
+                      </motion.a>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* MOBILE MENU HAMBURGER */}
               <button
@@ -206,7 +256,6 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
             </motion.div>
           )}
         </AnimatePresence>
-        <MarketplaceButtons items={marketplaces} variant="strip" />
       </header>
 
       {/* POP-UP SEARCH */}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, Lock, CheckCircle2 } from 'lucide-react';
-import MarketplaceButtons from './MarketplaceButtons';
-import { useMarketplaces } from '../utils/marketplaces';
+import { MapPin, Phone, Lock, CheckCircle2, ExternalLink } from 'lucide-react';
+import { useMarketplaces, marketplaceHref } from '../utils/marketplaces';
+import { MARKETPLACE_ICONS, MARKETPLACE_THEME } from './MarketplaceIcons';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
@@ -51,7 +51,40 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.
             </p>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">Belanja juga di marketplace</p>
-            <MarketplaceButtons items={marketplaces} variant="footer" />
+            <div className="flex flex-col gap-2">
+              {marketplaces.filter((item) => item.id === 'shopee' || item.id === 'lazada').map((item) => {
+                const Icon = MARKETPLACE_ICONS[item.id];
+                const theme = MARKETPLACE_THEME[item.id];
+                return (
+                  <a
+                    key={item.id}
+                    href={marketplaceHref(item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center justify-center gap-2 ${theme.bg} ${theme.hover} text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5`}
+                  >
+                    <Icon className="w-4 h-4" /> {item.label} <ExternalLink size={14} />
+                  </a>
+                );
+              })}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {marketplaces.filter((item) => item.id === 'tokopedia' || item.id === 'tiktok').map((item) => {
+                  const Icon = MARKETPLACE_ICONS[item.id];
+                  const theme = MARKETPLACE_THEME[item.id];
+                  return (
+                    <a
+                      key={item.id}
+                      href={marketplaceHref(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1.5 ${theme.bg} ${theme.hover} text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase`}
+                    >
+                      <Icon className="w-3.5 h-3.5" /> {item.name} Soon
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="hidden lg:block">
