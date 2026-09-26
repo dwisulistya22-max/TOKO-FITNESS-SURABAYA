@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp, Share2, Check, Search } from 'lucide-react';
+import { ShoppingCart, X, Info, Star, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 import { useCatalog } from '../catalog';
 import { productDomId, productMatchesQuery, searchRelevance } from '../utils/productSearch';
-import { ShopeeIcon, LazadaIcon } from './MarketplaceIcons';
 import MarketplaceButtons from './MarketplaceButtons';
-import { useMarketplaces, marketplaceHref } from '../utils/marketplaces';
+import { useMarketplaces } from '../utils/marketplaces';
 
 const HOMEPAGE_LIMIT = 8;
 
@@ -31,37 +30,17 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   } = useCatalog();
   const [activeImgIndex, setActiveImgIndex] = useState<number>(0);
   const [showAll, setShowAll] = useState(false);
-  const [copied, setCopied] = useState(false);
   const scrolledToken = useRef<string | null>(null);
   const marketplaces = useMarketplaces();
-  const lazadaStore = marketplaces.find((item) => item.id === 'lazada');
 
   useEffect(() => { setShowAll(false); }, [activeCategory]);
-  useEffect(() => { setActiveImgIndex(0); setCopied(false); }, [selected?.id]);
+  useEffect(() => { setActiveImgIndex(0); }, [selected?.id]);
 
   const openDetail = (product: any) => {
     if (isStrayClick()) return;
     openProduct(product);
   };
   const closeDetail = () => closeProduct();
-
-  const handleShareProduct = (product: any) => {
-    const shareText = `Cek *${product.name}* harga ${formatPrice(product.price)} hanya di Toko Fitness Surabaya!\n\nLihat selengkapnya di website kami:\nhttps://tokofitnesssurabaya.com`;
-
-    if (navigator.share) {
-      navigator.share({
-        title: 'Toko Fitness Surabaya',
-        text: shareText,
-        url: 'https://tokofitnesssurabaya.com',
-      }).catch(() => {
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
-      });
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    }
-  };
 
   const normalizedQuery = searchQuery.trim();
   const focusProduct = selected && normalizedQuery && (selected.id === highlightId) ? selected : null;
@@ -217,45 +196,6 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     <ShoppingCart size={20} /> Pesan via WhatsApp
                   </a>
 
-                  {selected.shopeeUrl && selected.shopeeUrl.length > 5 && (
-                    <a
-                      href={selected.shopeeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#EE4D2D] hover:bg-[#d73211] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
-                    >
-                      <ShopeeIcon className="w-5 h-5" /> Beli di Shopee Official <ExternalLink size={18} />
-                    </a>
-                  )}
-
-                  {lazadaStore && (
-                    <a
-                      href={marketplaceHref(lazadaStore)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#0F146D] hover:bg-[#1b2394] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
-                    >
-                      <LazadaIcon className="w-5 h-5 text-orange-400" /> Beli di Lazada Official <ExternalLink size={18} />
-                    </a>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => handleShareProduct(selected)}
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check size={18} className="text-green-600" />
-                        <span className="text-green-600">Berbagi via WhatsApp...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 size={18} className="text-red-600" />
-                        <span>Bagikan Produk Ini Ke Teman</span>
-                      </>
-                    )}
-                  </button>
                 </div>
 
               </div>
