@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
+import { MapPin, Phone, Lock, CheckCircle2, ExternalLink } from 'lucide-react';
+import { useMarketplaces, marketplaceHref } from '../utils/marketplaces';
+import { MARKETPLACE_ICONS, MARKETPLACE_THEME } from './MarketplaceIcons';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
-const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
-
-const ShopeeIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
-  </svg>
-);
 
 const Footer = ({ onLogin }: { onLogin: () => void }) => {
-  const [shopeeUrl, setShopeeUrl] = useState<string>(OFFICIAL_SHOPEE_URL);
+  const marketplaces = useMarketplaces();
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const [address, setAddress] = useState<string>('Jl. Dukuh Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya');
 
@@ -20,8 +15,6 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
     const fetchFooterData = async () => {
       const query = encodeURIComponent(`{
         "store": *[_type in ["storeConfig","storeInfo","settings"]][0]{
-          "shopee": coalesce(shopee, shopeeUrl, ""),
-          "facebook": coalesce(facebook, ""),
           "logo": coalesce(logo.asset->url, image.asset->url, photo.asset->url, ""),
           "alamat": coalesce(alamat, address, "")
         }
@@ -31,18 +24,11 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
         try {
           const res = await fetch(`https://${id}.api.sanity.io/v2024-01-01/data/query/${DATASET}?query=${query}`, { cache: 'no-store' });
           const data = await res.json();
-          
+
           if (data?.result?.store) {
             const storeData = data.result.store;
             if (storeData.logo) setLogoUrl(storeData.logo);
             if (storeData.alamat) setAddress(storeData.alamat);
-
-            const rawLink = storeData.shopee || storeData.facebook || '';
-            if (rawLink && rawLink.includes('shopee.co.id') && !rawLink.includes('id.sh.ee')) {
-               setShopeeUrl(rawLink.startsWith('http') ? rawLink : 'https://' + rawLink);
-            } else {
-              setShopeeUrl(OFFICIAL_SHOPEE_URL);
-            }
             break;
           }
         } catch (err) { console.error('Error fetching footer data:', err); }
@@ -55,8 +41,7 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
     <footer id="footer" className="bg-[#0f172a] text-white pt-16 pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
-          
-          {/* KOLOM 1 */}
+
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img src={logoUrl} alt="Logo" className="h-12 w-12 object-contain rounded-xl bg-white p-1" onError={(e: any) => { e.target.src = '/logo.png'; }} />
@@ -65,22 +50,53 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
             <p className="text-slate-400 text-xs leading-relaxed">
               Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Solusi tepat untuk gaya hidup sehat Anda.
             </p>
-            <a href={shopeeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#EE4D2D] hover:bg-[#d73211] text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5">
-              <ShopeeIcon className="w-4 h-4" /> Shopee Official <ExternalLink size={14} />
-            </a>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">Belanja juga di marketplace</p>
+            <div className="flex flex-col gap-2">
+              {marketplaces.filter((item) => item.id === 'shopee' || item.id === 'lazada').map((item) => {
+                const Icon = MARKETPLACE_ICONS[item.id];
+                const theme = MARKETPLACE_THEME[item.id];
+                return (
+                  <a
+                    key={item.id}
+                    href={marketplaceHref(item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center justify-center gap-2 ${theme.bg} ${theme.hover} text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5`}
+                  >
+                    <Icon className="w-4 h-4" /> {item.label} <ExternalLink size={14} />
+                  </a>
+                );
+              })}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {marketplaces.filter((item) => item.id === 'tokopedia' || item.id === 'tiktok').map((item) => {
+                  const Icon = MARKETPLACE_ICONS[item.id];
+                  const theme = MARKETPLACE_THEME[item.id];
+                  return (
+                    <a
+                      key={item.id}
+                      href={marketplaceHref(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1.5 ${theme.bg} ${theme.hover} text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase`}
+                    >
+                      <Icon className="w-3.5 h-3.5" /> {item.name} Soon
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* KOLOM 2 */}
           <div className="hidden lg:block">
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Tautan Cepat</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li><a href="#hero" className="hover:text-red-500 transition-colors">Beranda</a></li>
               <li><a href="#products" className="hover:text-red-500 transition-colors">Produk</a></li>
               <li><a href="#categories" className="hover:text-red-500 transition-colors">Kategori</a></li>
+              <li><a href="#marketplace" className="hover:text-red-500 transition-colors">Shopee, Lazada & Marketplace</a></li>
             </ul>
           </div>
 
-          {/* KOLOM 3 */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Layanan</h4>
             <ul className="space-y-3 text-xs text-slate-400">
@@ -90,7 +106,6 @@ const Footer = ({ onLogin }: { onLogin: () => void }) => {
             </ul>
           </div>
 
-          {/* KOLOM 4: HUBUNGI KAMI (WA & MAPS SAJA - TANPA EMAIL) */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white">Hubungi Kami</h4>
             <ul className="space-y-3.5 text-xs text-slate-400">

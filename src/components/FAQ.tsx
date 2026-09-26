@@ -32,9 +32,9 @@ const faqs = [
       "Bisa. Tersedia opsi DP, pelunasan sebelum kirim, transfer bank, dan COD untuk area tertentu di Surabaya.",
   },
   {
-    question: "Apakah harga di website sama dengan di Shopee?",
+    question: "Apakah harga di website sama dengan di Shopee atau Lazada?",
     answer:
-      "Harga bisa berbeda karena ada promo platform. Untuk harga terbaik dan paket lengkap (termasuk ongkir/pasang), hubungi kami langsung.",
+      "Harga bisa berbeda karena ada promo platform di Shopee dan Lazada. Tokopedia & TikTok Shop segera hadir. Untuk harga terbaik dan paket lengkap (termasuk ongkir/pasang), hubungi kami langsung.",
   },
   {
     question: "Apakah ada showroom yang bisa dikunjungi?",

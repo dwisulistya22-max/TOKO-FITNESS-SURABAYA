@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import MarketplaceButtons from './MarketplaceButtons';
+import { useMarketplaces } from '../utils/marketplaces';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
@@ -9,6 +11,7 @@ const DEFAULT_BG = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48
 const Hero = () => {
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const [bgUrl, setBgUrl] = useState<string>(DEFAULT_BG);
+  const marketplaces = useMarketplaces();
 
   useEffect(() => {
     const fetchHeroData = async () => {
@@ -115,8 +118,10 @@ const Hero = () => {
           >
             {/* TULISAN DESKRIPSI */}
             <p className="text-gray-200 text-xs sm:text-sm max-w-2xl leading-relaxed font-medium drop-shadow">
-              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Siap kirim & pasang langsung di rumah Anda.
+              Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya. Siap kirim & pasang langsung di rumah Anda. Tersedia juga di Shopee & Lazada.
             </p>
+
+            <MarketplaceButtons items={marketplaces.filter((item) => item.live)} variant="hero" />
 
             {/* BADGES SEJAJAR HORIZONTAL */}
             <div className="flex flex-row items-center gap-3 text-xs sm:text-sm text-white pt-1">

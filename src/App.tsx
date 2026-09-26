@@ -5,6 +5,7 @@ import FeaturedProducts from './components/FeaturedProducts';
 import WhyChooseUs from './components/WhyChooseUs';
 import Testimonials from './components/Testimonials';
 import FAQ from "./components/FAQ";
+import MarketplaceSection from './components/MarketplaceSection';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import { useState, useEffect } from 'react';
@@ -214,6 +215,7 @@ function App() {
         <WhyChooseUs />
         <Testimonials />
         <FAQ />
+        <MarketplaceSection />
         
         {/* 🔥 SECTION PENAWARAN PAKET KHUSUS 🔥 */}
         <section className="py-20 bg-gradient-to-br from-red-900 via-red-700 to-slate-950 text-white relative overflow-hidden">

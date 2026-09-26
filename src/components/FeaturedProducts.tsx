@@ -4,17 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 import { useCatalog } from '../catalog';
 import { productDomId, productMatchesQuery, searchRelevance } from '../utils/productSearch';
+import { ShopeeIcon, LazadaIcon } from './MarketplaceIcons';
+import MarketplaceButtons from './MarketplaceButtons';
+import { useMarketplaces, marketplaceHref } from '../utils/marketplaces';
 
-// 🎯 LINK SHOPEE RESMI ANDA
-const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
 const HOMEPAGE_LIMIT = 8;
-
-// 🛒 IKON TAS SHOPEE ASLI
-const ShopeeIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
-  </svg>
-);
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
@@ -39,6 +33,8 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
   const [showAll, setShowAll] = useState(false);
   const [copied, setCopied] = useState(false);
   const scrolledToken = useRef<string | null>(null);
+  const marketplaces = useMarketplaces();
+  const lazadaStore = marketplaces.find((item) => item.id === 'lazada');
 
   useEffect(() => { setShowAll(false); }, [activeCategory]);
   useEffect(() => { setActiveImgIndex(0); setCopied(false); }, [selected?.id]);
@@ -232,6 +228,17 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                     </a>
                   )}
 
+                  {lazadaStore && (
+                    <a
+                      href={marketplaceHref(lazadaStore)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#0F146D] hover:bg-[#1b2394] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg transition-colors"
+                    >
+                      <LazadaIcon className="w-5 h-5 text-orange-400" /> Beli di Lazada Official <ExternalLink size={18} />
+                    </a>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => handleShareProduct(selected)}
@@ -274,7 +281,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
             </p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {normalizedQuery && (
               <button
                 type="button"
@@ -284,14 +291,7 @@ const FeaturedProducts = ({ activeCategory = 'Semua' }: any) => {
                 Hapus Pencarian
               </button>
             )}
-            <a
-              href={OFFICIAL_SHOPEE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#EE4D2D] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md hover:bg-[#d73211] transition-colors"
-            >
-              <ShopeeIcon className="w-5 h-5" /> Shopee Mall
-            </a>
+            <MarketplaceButtons items={marketplaces.filter((item) => item.live)} variant="pills" />
           </div>
         </div>
 

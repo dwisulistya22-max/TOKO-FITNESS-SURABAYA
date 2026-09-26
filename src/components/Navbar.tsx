@@ -1,22 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Phone, ShoppingCart, Search, Menu, X, Sparkles, ExternalLink } from 'lucide-react';
+import { Phone, ShoppingCart, Search, Menu, X, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STORE_CONFIG } from '../data/config';
 import { useCatalog } from '../catalog';
 import { productMatchesQuery, searchRelevance } from '../utils/productSearch';
+import { useMarketplaces, marketplaceHref } from '../utils/marketplaces';
+import { MARKETPLACE_ICONS } from './MarketplaceIcons';
 
 const PROJECT_IDS = ['qi4rocc0', '856jrik3'];
 const DATASET = 'production';
-
-// 🎯 LINK SHOPEE RESMI ANDA
-const OFFICIAL_SHOPEE_URL = 'https://shopee.co.id/fitnesssurabaya';
-
-// 🛒 IKON TAS SHOPEE ASLI
-const ShopeeIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a1 1 0 0 0-1-1zm-9-1a2 2 0 0 1 4 0v1h-4V6zm8 13H6V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
-  </svg>
-);
 
 const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -24,6 +16,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
   const [logoUrl, setLogoUrl] = useState('/logo.png');
   const { products, loading: catalogLoading, openProduct, searchQuery, setSearchQuery, isStrayClick } = useCatalog();
   const [clickShield, setClickShield] = useState(false);
+  const marketplaces = useMarketplaces();
 
   // STATE SEARCH
   const [searchOpen, setSearchOpen] = useState(false);
@@ -121,10 +114,11 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
               <a href="#hero" className="hover:text-red-600 transition-colors">Beranda</a>
               <a href="#products" onClick={(event) => { if (isStrayClick()) { event.preventDefault(); return; } onSelectCategory && onSelectCategory('Semua'); }} className="hover:text-red-600 transition-colors">Produk</a>
               <a href="#categories" className="hover:text-red-600 transition-colors">Kategori</a>
+              <a href="#marketplace" className="hover:text-red-600 transition-colors">Marketplace</a>
               <a href="#footer" className="hover:text-red-600 transition-colors">Tentang Kami</a>
             </nav>
 
-            {/* TOMBOL PENCARIAN, HUBUNGI KAMI & TOMBOL SHOPEE LEDAKAN */}
+            {/* TOMBOL PENCARIAN, HUBUNGI KAMI & MARKETPLACE */}
             <div className="flex items-center gap-3">
               
               {/* TOMBOL SEARCH */}
@@ -148,10 +142,7 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 </button>
               )}
 
-              {/* CONTAINER KANAN */}
               <div className="relative flex flex-col items-end">
-                
-                {/* TOMBOL HUBUNGI KAMI */}
                 <a
                   href={`https://wa.me/${waNumber}?text=Halo%20Admin%20Toko%20Fitness%20Surabaya,%20saya%20ingin%20konsultasi`}
                   target="_blank"
@@ -161,38 +152,54 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                   <Phone size={15} /> Hubungi Kami
                 </a>
 
-                {/* 🔥 TOMBOL SHOPEE OFFICIAL BERGERAK (MODE LEDAKAN / CETAR) 🔥 */}
-                <motion.a
-                  href={OFFICIAL_SHOPEE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ scale: 0.9 }}
-                  animate={{
-                    scale: [1, 1.12, 1],
-                    boxShadow: [
-                      "0px 0px 0px rgba(238, 77, 45, 0)",
-                      "0px 0px 20px rgba(238, 77, 45, 0.95)",
-                      "0px 0px 0px rgba(238, 77, 45, 0)"
-                    ]
-                  }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 1.2,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute top-full mt-1.5 right-0 z-30 inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-[#EE4D2D] to-red-600 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 border-yellow-300 whitespace-nowrap cursor-pointer hover:scale-105 transition-transform"
-                >
-                  {/* RADAR PING LEDAKAN */}
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-90"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
-                  </span>
-                  
-                  <ShopeeIcon className="w-3.5 h-3.5 text-yellow-300 animate-bounce" />
-                  <span>"🧡 Beli di Shopee Official"</span>
-                  <ExternalLink size={11} className="text-yellow-200" />
-                </motion.a>
-
+                <div className="absolute top-full mt-1.5 right-0 z-30 flex flex-col items-end gap-1.5 sm:flex-row">
+                  {marketplaces.filter((item) => item.id === 'shopee' || item.id === 'lazada').map((item, index) => {
+                    const Icon = MARKETPLACE_ICONS[item.id];
+                    const isShopee = item.id === 'shopee';
+                    return (
+                      <motion.a
+                        key={item.id}
+                        href={marketplaceHref(item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        initial={{ scale: 0.9 }}
+                        animate={{
+                          scale: [1, 1.08, 1],
+                          boxShadow: isShopee
+                            ? [
+                                '0px 0px 0px rgba(238, 77, 45, 0)',
+                                '0px 0px 18px rgba(238, 77, 45, 0.95)',
+                                '0px 0px 0px rgba(238, 77, 45, 0)',
+                              ]
+                            : [
+                                '0px 0px 0px rgba(245, 114, 36, 0)',
+                                '0px 0px 18px rgba(245, 114, 36, 0.95)',
+                                '0px 0px 0px rgba(245, 114, 36, 0)',
+                              ],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 1.2,
+                          delay: index * 0.15,
+                          ease: 'easeInOut',
+                        }}
+                        className={`inline-flex items-center gap-1.5 text-white font-black text-[9px] sm:text-[11px] uppercase tracking-wider px-3 py-1 rounded-full shadow-2xl border-2 whitespace-nowrap cursor-pointer hover:scale-105 transition-transform ${
+                          isShopee
+                            ? 'bg-gradient-to-r from-amber-400 via-[#EE4D2D] to-red-600 border-yellow-300'
+                            : 'bg-gradient-to-r from-[#F57224] via-[#0F146D] to-[#1a237e] border-orange-300'
+                        }`}
+                      >
+                        <span className="relative flex h-2 w-2">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isShopee ? 'bg-yellow-200' : 'bg-orange-200'} opacity-90`}></span>
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${isShopee ? 'bg-yellow-300' : 'bg-orange-300'}`}></span>
+                        </span>
+                        <Icon className={`w-3.5 h-3.5 ${isShopee ? 'text-yellow-300' : 'text-orange-300'} animate-bounce`} />
+                        <span>{isShopee ? 'Beli di Shopee Official' : 'Beli di Lazada Official'}</span>
+                        <ExternalLink size={11} className={isShopee ? 'text-yellow-200' : 'text-orange-200'} />
+                      </motion.a>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* MOBILE MENU HAMBURGER */}
@@ -221,7 +228,30 @@ const Navbar = ({ cartCount = 0, onOpenCart, onSelectCategory }: any) => {
                 <a href="#hero" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Beranda</a>
                 <a href="#products" onClick={(event) => { if (isStrayClick()) { event.preventDefault(); return; } setIsMobileMenuOpen(false); onSelectCategory && onSelectCategory('Semua'); }} className="block py-2 border-b border-gray-50">Produk</a>
                 <a href="#categories" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Kategori</a>
+                <a href="#marketplace" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 border-b border-gray-50">Marketplace</a>
                 <a href="#footer" onClick={() => setIsMobileMenuOpen(false)} className="block py-2">Tentang Kami</a>
+                <div className="pt-2 space-y-2">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400">Belanja di Marketplace</p>
+                  {marketplaces.map((item) => {
+                    const Icon = MARKETPLACE_ICONS[item.id];
+                    return (
+                      <a
+                        key={item.id}
+                        href={marketplaceHref(item)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center justify-between py-2 border-b border-gray-50"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="w-4 h-4 text-red-600" />
+                          {item.label}
+                        </span>
+                        <ExternalLink size={14} className="text-gray-400" />
+                      </a>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           )}
