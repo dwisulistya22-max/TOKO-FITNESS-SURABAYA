@@ -12,12 +12,19 @@ export default {
       name: 'shopee',
       title: 'Link Shopee Official Store',
       type: 'string',
-      description: 'Masukkan link toko Shopee Anda (Contoh: https://id.sh.ee/PEdSUDy6)',
+      description: 'Masukkan link toko Shopee publik (Contoh: https://shopee.co.id/fitnesssurabaya)',
+    },
+    {
+      name: 'lazada',
+      title: 'Link Lazada Official Store',
+      type: 'string',
+      description: 'Masukkan link TOKO PUBLIK Lazada (contoh: https://www.lazada.co.id/shop/nama-toko). Jangan pakai sellercenter.',
     },
     {
       name: 'tokopedia',
       title: 'Link Tokopedia',
       type: 'string',
+      description: 'Opsional. Isi jika toko Tokopedia sudah aktif.',
     },
     {
       name: 'facebook',
@@ -26,8 +33,9 @@ export default {
     },
     {
       name: 'tiktok',
-      title: 'TikTok',
+      title: 'TikTok Shop',
       type: 'string',
+      description: 'Opsional. Isi jika TikTok Shop sudah aktif.',
     },
     {
       name: 'youtube',

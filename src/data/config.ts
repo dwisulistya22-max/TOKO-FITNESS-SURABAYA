@@ -6,14 +6,63 @@ export const STORE_CONFIG = {
   phone2: "6281235907956",
   email: "dwisulistya22@gmail.com",
   address: "Jl. Kuwukan Gg. 2 No.22, Lontar, Kec. Sambikerep, Surabaya, Jawa Timur 60216",
-  shopee: "https://id.sh.ee/PEdSUDy6",
-  tokopedia: "https://www.tokopedia.com/search?st=product&q=toko%20fitness%20surabaya",
+  shopee: "https://shopee.co.id/fitnesssurabaya",
+  // Link publik toko Lazada (bukan sellercenter). Sesuaikan slug toko jika berbeda.
+  lazada: "https://www.lazada.co.id/shop/fitnesssurabaya",
+  tokopedia: "",
+  tiktok: "",
   hero: {
     title: "KUALITAS GYM PROFESIONAL DI RUMAH ANDA",
     subtitle: "Pusat penyedia alat fitness terlengkap dan terpercaya di Surabaya.",
     tag: "PROMO CUCI GUDANG 2024"
   }
 };
+
+export type MarketplaceId = "shopee" | "lazada" | "tokopedia" | "tiktok";
+
+export type MarketplaceConfig = {
+  id: MarketplaceId;
+  name: string;
+  label: string;
+  url: string;
+  live: boolean;
+  description: string;
+};
+
+export const MARKETPLACES: MarketplaceConfig[] = [
+  {
+    id: "shopee",
+    name: "Shopee",
+    label: "Shopee Official",
+    url: STORE_CONFIG.shopee,
+    live: true,
+    description: "Voucher, flash sale, dan cicilan Shopee. Toko resmi Toko Fitness Surabaya.",
+  },
+  {
+    id: "lazada",
+    name: "Lazada",
+    label: "Lazada Official",
+    url: STORE_CONFIG.lazada,
+    live: true,
+    description: "Belanja alat gym di Lazada. Promo platform, COD, dan pengiriman ke seluruh Indonesia.",
+  },
+  {
+    id: "tokopedia",
+    name: "Tokopedia",
+    label: "Tokopedia",
+    url: STORE_CONFIG.tokopedia,
+    live: false,
+    description: "Toko Tokopedia sedang disiapkan. Chat WhatsApp untuk order atau cek stok.",
+  },
+  {
+    id: "tiktok",
+    name: "TikTok Shop",
+    label: "TikTok Shop",
+    url: STORE_CONFIG.tiktok,
+    live: false,
+    description: "TikTok Shop segera hadir. Tanyakan live sale & paket promo via WhatsApp.",
+  },
+];
 
 export const TESTIMONIALS = [
   {
