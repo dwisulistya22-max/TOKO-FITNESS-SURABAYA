@@ -43,9 +43,14 @@ const rows = raws.map((r, i) => {
     dims: spec ? [spec.lengthCm || '', spec.widthCm || '', spec.heightCm || ''] : ['', '', ''],
   };
 });
-const ok = rows.filter((r) => !r.blocking && r.p.stock > 0)
-  .sort((a, b) => (b.dimsFull - a.dimsFull) || (b.p.stock - a.p.stock) || (a.p.price - b.p.price));
-const top = ok.slice(0, 100);
+const CAT_ORDER = ['Treadmill & Walking Pad', 'Commercial Fitness', 'Home Gym & Bench Press', 'Sepeda Statis & Crosstrainer', 'Stick & Accessories', 'Sparepart', 'Dumbell & Weight Plate', 'Rubber Flooring', 'Fitness Outdoor'];
+const catIx = (c) => { const i = CAT_ORDER.indexOf(c); return i < 0 ? 99 : i; };
+const ok = rows.filter((r) => !r.blocking && r.p.stock > 0);
+const full = ok.filter((r) => r.dimsFull)
+  .sort((a, b) => (catIx(a.p.category) - catIx(b.p.category)) || (b.p.stock - a.p.stock) || (a.p.price - b.p.price));
+const nodim = ok.filter((r) => !r.dimsFull)
+  .sort((a, b) => (b.p.stock - a.p.stock) || (a.p.price - b.p.price));
+const top = [...full, ...nodim].slice(0, 100);
 const out = top.map((r, k) => ({
   no: k + 1,
   name: r.p.name,

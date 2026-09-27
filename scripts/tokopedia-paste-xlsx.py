@@ -1,5 +1,5 @@
 # python3 scripts/tokopedia-paste-xlsx.py
-# Buat file Excel 3 blok siap copy-paste ke template resmi Tokopedia.
+# Buat file Excel 3 blok siap copy-paste ke template resmi Tokopedia + panduan kategori.
 import json
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -9,27 +9,28 @@ wb = Workbook()
 ws0 = wb.active
 ws0.title = 'CARA PAKAI'
 lines = [
-    'CARA MEMAKAI FILE INI (5 menit)',
+    'CARA MEMAKAI FILE INI (10 menit)',
     '',
     'File ini berisi 100 produk yang SUDAH DIPILIH (ada stok + data lengkap).',
-    'Anda tinggal COPY-PASTE 3 blok ke file template Tokopedia.',
+    'Anda tinggal COPY-PASTE 3 blok ke file template Tokopedia (sheet "Template").',
     '',
     'Langkah 0 - Buka file template Tokopedia, klik "Enable Editing" (baris kuning di atas).',
-    'Langkah 1 - Isi kolom A (Kategori): klik sel A7, pilih kategori dari panah kecil,',
-    'lalu tarik kotaknya ke bawah sampai baris 106 (klik kotak hijau di sudut sel, tarik ke bawah).',
-    'Pilih kategori yang ada kata Fitness / Gym / Alat Olahraga.',
+    'Langkah 1 - Isi kolom A (Kategori) PER KELOMPOK (lihat sheet "BANTU-KATEGORI"):',
+    'contoh: baris 7-36 semuanya treadmill -> klik A7, pilih kategori dari panah kecil,',
+    'lalu tarik kotak hijau di sudut sel ke bawah sampai A36. Ulangi untuk kelompok berikutnya.',
+    'Pilih kategori yang paling mirip (ada kata Treadmill / Gym / Fitness / Alat Olahraga).',
     'Langkah 2 - BLOK 1: buka sheet "BLOK 1-tempel-C7", tekan Ctrl+A (pilih semua), Ctrl+C (copy),',
     'pindah ke template, klik sel C7, tekan Ctrl+V (paste).',
     'Langkah 3 - BLOK 2: buka sheet "BLOK 2-tempel-S7", Ctrl+A, Ctrl+C,',
     'pindah ke template, klik sel S7, Ctrl+V.',
     'Langkah 4 - BLOK 3: buka sheet "BLOK 3-tempel-X7", Ctrl+A, Ctrl+C,',
     'pindah ke template, klik sel X7, Ctrl+V.',
-    'Langkah 5 - Di template tekan Ctrl+S (simpan). Upload di Seller Center > Langkah 2.',
+    'Langkah 5 - Di template tekan Ctrl+S (simpan). Upload di Seller Center > Langkah 2 (Unggah File).',
     '',
-    'CATATAN: kolom B (Merek) dikosongkan - tidak wajib.',
-    'CATATAN 2: 4 baris terakhir (97-100) dimensinya kosong -',
-    'kalau upload error, hapus saja 4 baris itu di template.',
-    'CATATAN 3: kalau kategori sebuah produk tidak ada di pilihan kolom A,',
+    'CATATAN: kolom B (Merek) dan kolom Y (Pre-sale) sengaja dikosongkan - benar begitu.',
+    'CATATAN 2: 4 baris PALING BAWAH dimensinya kosong -',
+    'kalau upload error, hapus saja 4 baris paling bawah itu di template.',
+    'CATATAN 3: kalau jenis produk tidak ada di pilihan kolom A,',
     'hapus baris produk itu (di-upload nanti dengan template kategori lain).',
     'Kalau ada foto ditolak Tokopedia, beri tahu saya.',
 ]
@@ -46,7 +47,7 @@ def sheet(name, cols):
             ws.cell(row=r, column=c, value=fn(o))
 
 
-E = lambda o: ''  # noqa: E731 - kolom kosong
+E = lambda o: ''  # noqa: E731 - kolom kosong (B=Merek, Y=Pre-sale)
 sheet('BLOK 1-tempel-C7', [
     lambda o: o['name'], lambda o: (o['description'] or '').strip(),
     lambda o: o['photos'][0], lambda o: o['photos'][1], lambda o: o['photos'][2],
@@ -55,5 +56,22 @@ sheet('BLOK 2-tempel-S7', [
     lambda o: o['weight'], lambda o: o['length'], lambda o: o['width'], lambda o: o['height']])
 sheet('BLOK 3-tempel-X7', [
     lambda o: o['price'], E, lambda o: o['stock'], lambda o: o['sku']])
+
+# Panduan kategori per kelompok (template baris = file baris + 6)
+ws = wb.create_sheet('BANTU-KATEGORI')
+ws.append(['Baris di template', 'Jenis produk', 'Jumlah'])
+groups = []
+start = 0
+for i, o in enumerate(top):
+    if o['sanityCategory'] != top[start]['sanityCategory']:
+        groups.append((start, i - 1, top[start]['sanityCategory']))
+        start = i
+groups.append((start, len(top) - 1, top[start]['sanityCategory']))
+for a, b, cat in groups:
+    ws.append([f'Baris {a + 7}-{b + 7}', cat, b - a + 1])
+ws.column_dimensions['A'].width = 18
+ws.column_dimensions['B'].width = 30
+ws.column_dimensions['C'].width = 10
+
 wb.save('tokopedia-csv/TEMPLATE-ISI-100-PRODUK.xlsx')
-print('xlsx OK:', len(top))
+print('xlsx OK:', len(top), '| kelompok:', len(groups))
