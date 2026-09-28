@@ -1,38 +1,43 @@
-# python3 scripts/tokopedia-paste-xlsx.py
-# Buat file Excel 3 blok siap copy-paste ke template resmi Tokopedia + panduan kategori.
+"""Build TEMPLATE-ISI-99-PRODUK.xlsx (batch-1 FINAL revisi).
+
+Revisi 2026-09-28: Walking Pad CH-21 (top100[0]) SUDAH tayang manual, trial
+Tokopedia maks 100 listing -> file ini berisi 99 produk (top100[1:]) agar
+total 1 + 99 = 100 PAS. Kategori per kelompok sudah ground-truth via
+category_id=837768 (Mesin Kebugaran) dari URL halaman edit produk live.
+Kolom A template diisi dengan COPY sel dari sheet Category (JANGAN dropdown).
+Nomor baris Category = KONDISI SETELAH user sort A-Z ( stabilization ).
+"""
 import json
+
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
-top = json.load(open('tokopedia-csv/top100.json', encoding='utf-8'))
+data = json.load(open('tokopedia-csv/top100.json'))
+assert data[0]['name'] == 'Walking Pad CH-21', data[0]['name']
+top = data[1:]
+assert len(top) == 99, len(top)
+
 wb = Workbook()
 ws0 = wb.active
 ws0.title = 'CARA PAKAI'
 lines = [
-    'CARA MEMAKAI FILE INI (10 menit)',
+    'CARA PAKAI - 99 PRODUK (Walking Pad CH-21 sudah tayang manual, tidak ikut file ini).',
+    'Trial Tokopedia: 1 (manual) + 99 (file ini) = 100 PAS.',
     '',
-    'File ini berisi 100 produk yang SUDAH DIPILIH (ada stok + data lengkap).',
-    'Anda tinggal COPY-PASTE 3 blok ke file template Tokopedia (sheet "Template").',
-    '',
-    'Langkah 0 - Buka file template Tokopedia, klik "Enable Editing" (baris kuning di atas).',
-    'Langkah 1 - Isi kolom A (Kategori) PER KELOMPOK (lihat sheet "BANTU-KATEGORI"):',
-    'contoh: baris 7-36 semuanya treadmill -> klik A7, pilih kategori dari panah kecil,',
-    'lalu tarik kotak hijau di sudut sel ke bawah sampai A36. Ulangi untuk kelompok berikutnya.',
-    'Pilih kategori yang paling mirip (ada kata Treadmill / Gym / Fitness / Alat Olahraga).',
-    'Langkah 2 - BLOK 1: buka sheet "BLOK 1-tempel-C7", tekan Ctrl+A (pilih semua), Ctrl+C (copy),',
-    'pindah ke template, klik sel C7, tekan Ctrl+V (paste).',
-    'Langkah 3 - BLOK 2: buka sheet "BLOK 2-tempel-S7", Ctrl+A, Ctrl+C,',
-    'pindah ke template, klik sel S7, Ctrl+V.',
-    'Langkah 4 - BLOK 3: buka sheet "BLOK 3-tempel-X7", Ctrl+A, Ctrl+C,',
-    'pindah ke template, klik sel X7, Ctrl+V.',
+    'Langkah 1 - Isi kolom A template dengan COPY dari sheet Category (JANGAN pakai panah kecil!):',
+    'Pola: buka tab Category > klik sel sumber (misal A205) > Ctrl+C > buka tab Template >',
+    'klik sel awal (misal A7) > tahan Shift + klik sel akhir (misal A35) > Ctrl+V.',
+    '1x copy bisa di-paste ke beberapa tempat. Ikuti tabel di sheet BANTU-KATEGORI.',
+    'PENTING: JANGAN klik Sort/Filter di sheet Category (nomor baris berubah!).',
+    'Isi lama kolom A (A7 dst) langsung DITIMPA saja.',
+    'Langkah 2 - BLOK 1: sheet "BLOK 1-tempel-C7" > Ctrl+A > Ctrl+C > template klik C7 > Ctrl+V.',
+    'Langkah 3 - BLOK 2: sheet "BLOK 2-tempel-S7" > Ctrl+A > Ctrl+C > template klik S7 > Ctrl+V.',
+    'Langkah 4 - BLOK 3: sheet "BLOK 3-tempel-X7" > Ctrl+A > Ctrl+C > template klik X7 > Ctrl+V.',
     'Langkah 5 - Di template tekan Ctrl+S (simpan). Upload di Seller Center > Langkah 2 (Unggah File).',
     '',
-    'CATATAN: kolom B (Merek) dan kolom Y (Pre-sale) sengaja dikosongkan - benar begitu.',
-    'CATATAN 2: 4 baris PALING BAWAH dimensinya kosong -',
-    'kalau upload error, hapus saja 4 baris paling bawah itu di template.',
-    'CATATAN 3: kalau jenis produk tidak ada di pilihan kolom A,',
-    'hapus baris produk itu (di-upload nanti dengan template kategori lain).',
-    'Kalau ada foto ditolak Tokopedia, beri tahu saya.',
+    'CATATAN: kolom B (Merek) dan kolom Y (Pre-sale) kosong = BENAR (produk manual tanpa merek lolos).',
+    'CATATAN 2: kalau upload error di 4 baris paling bawah, hapus 4 baris itu lalu upload ulang.',
+    'Kalau ada baris ditolak, catat nomor barisnya dan beri tahu saya.',
 ]
 for i, t in enumerate(lines, 1):
     ws0.cell(row=i, column=1, value=t)
@@ -57,21 +62,35 @@ sheet('BLOK 2-tempel-S7', [
 sheet('BLOK 3-tempel-X7', [
     lambda o: o['price'], E, lambda o: o['stock'], lambda o: o['sku']])
 
-# Panduan kategori per kelompok (template baris = file baris + 6)
-ws = wb.create_sheet('BANTU-KATEGORI')
-ws.append(['Baris di template', 'Jenis produk', 'Jumlah'])
-groups = []
-start = 0
-for i, o in enumerate(top):
-    if o['sanityCategory'] != top[start]['sanityCategory']:
-        groups.append((start, i - 1, top[start]['sanityCategory']))
-        start = i
-groups.append((start, len(top) - 1, top[start]['sanityCategory']))
-for a, b, cat in groups:
-    ws.append([f'Baris {a + 7}-{b + 7}', cat, b - a + 1])
-ws.column_dimensions['A'].width = 18
-ws.column_dimensions['B'].width = 30
-ws.column_dimensions['C'].width = 10
+# [COPY sel Category, PASTE range Template, nama kategori, isi produk]
+# Template rows 7-105 (99 produk). A205 ground-truth via category_id=837768 live.
+BANTU = [
+    ('A205', 'A7:A35', 'Mesin Kebugaran', 'Treadmill & Walking Pad (29)'),
+    ('A205', 'A36:A60', 'Mesin Kebugaran', 'Commercial Fitness (25)'),
+    ('A205', 'A76:A89', 'Mesin Kebugaran', 'Sepeda Statis & Crosstrainer (14)'),
+    ('A205', 'A101', 'Mesin Kebugaran', 'Alat Outdoor (1)'),
+    ('A201', 'A61:A75', 'Latihan Beban', 'Home Gym & Bench (15)'),
+    ('A201', 'A96:A97', 'Latihan Beban', 'Dumbell Set (2)'),
+    ('A201', 'A103', 'Latihan Beban', 'Rubber Plate (1)'),
+    ('A196', 'A92', 'Aksesori Mesin Olahraga', 'Handle Row (1)'),
+    ('A196', 'A95', 'Aksesori Mesin Olahraga', 'Spon Busa (1)'),
+    ('A196', 'A102', 'Aksesori Mesin Olahraga', 'Tali Sling Putih (1)'),
+    ('A196', 'A104:A105', 'Aksesori Mesin Olahraga', 'Tali Sling Hitam + Klem U (2)'),
+    ('A204', 'A91', 'Matras olahraga', 'Matras Senam (1)'),
+    ('A204', 'A98:A100', 'Matras olahraga', 'Rubber Flooring (3)'),
+    ('A202', 'A90', 'Latihan Otot Perut', 'Figure Trimmer Twister (1)'),
+    ('A208', 'A93', 'Peralatan Latihan Keseimbangan', 'Bosu Balance Ball (1)'),
+    ('A188', 'A94', 'Senam (Bersantai & Rekreasi)', 'Aerobic Step (1)'),
+]
 
-wb.save('tokopedia-csv/TEMPLATE-ISI-100-PRODUK.xlsx')
-print('xlsx OK:', len(top), '| kelompok:', len(groups))
+ws = wb.create_sheet('BANTU-KATEGORI')
+ws.append(['COPY sel ini (di sheet Category)', 'PASTE ke (di sheet Template)', 'Kategori', 'Produk'])
+for row in BANTU:
+    ws.append(list(row))
+ws.column_dimensions['A'].width = 32
+ws.column_dimensions['B'].width = 30
+ws.column_dimensions['C'].width = 32
+ws.column_dimensions['D'].width = 38
+
+wb.save('tokopedia-csv/TEMPLATE-ISI-99-PRODUK.xlsx')
+print('xlsx OK:', len(top), '| bantu-baris:', len(BANTU))
