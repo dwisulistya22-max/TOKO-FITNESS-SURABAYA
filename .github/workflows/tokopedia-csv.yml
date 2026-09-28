@@ -1,0 +1,35 @@
+# Membuat file CSV Tokopedia dari data Sanity + file riset, lalu menyimpannya di repo.
+# Dijalankan MANUAL: gh workflow run tokopedia-csv.yml -r <branch> (atau tombol Run workflow).
+# Hasil: tokopedia-csv/tokopedia-semua-produk.csv (link mentah, bisa diunduh tanpa login).
+
+name: Buat CSV Tokopedia
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/01a0de11-toko-fitness-surabaya
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Bangun CSV
+        run: node scripts/tokopedia-build-csv.mjs
+      - name: Simpan CSV ke repo
+        run: |
+          git config user.name "arena-bot"
+          git config user.email "arena-bot@local"
+          git add tokopedia-csv/tokopedia-semua-produk.csv
+          if git diff --cached --quiet; then
+            echo "CSV tidak berubah."
+          else
+            git commit -m "tokopedia: update CSV massal (otomatis) [skip ci]"
+            git push
+          fi
