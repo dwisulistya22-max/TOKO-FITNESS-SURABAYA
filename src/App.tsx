@@ -8,6 +8,7 @@ import FAQ from "./components/FAQ";
 import MarketplaceSection from './components/MarketplaceSection';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
+import LazadaSyncPanel from './components/LazadaSyncPanel';
 import { useState, useEffect } from 'react';
 import { STORE_CONFIG } from './data/config';
 import { useCatalog } from './catalog';
@@ -24,6 +25,7 @@ function App() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminView, setAdminView] = useState<'menu' | 'lazada'>('menu');
 
   // 🛡️ FITUR KEAMANAN ANTI-COPY & ANTI-KLIK KANAN
   useEffect(() => {
@@ -66,6 +68,7 @@ function App() {
     setShowAdminModal(false);
     setPasswordInput('');
     setIsAuthenticated(false);
+    setAdminView('menu');
   };
 
   // 📥 FUNGSI DOWNLOAD KATALOG WA (KATEGORI OTOMATIS AMBIL DARI SANITY REFERENCE)
@@ -182,7 +185,7 @@ function App() {
       {/* MODAL ADMIN */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+          <div className={`bg-white rounded-3xl p-8 w-full shadow-2xl relative ${adminView === 'lazada' && isAuthenticated ? 'max-w-2xl' : 'max-w-md'}`}>
             <button onClick={handleCloseModal} className="absolute top-4 right-4 text-gray-400 text-2xl w-10 h-10 hover:bg-gray-100 rounded-full">×</button>
             {!isAuthenticated ? (
               <form onSubmit={handlePasswordSubmit} className="text-center">
@@ -192,11 +195,16 @@ function App() {
                 {passwordError && <p className="text-red-600 text-xs mb-4">❌ Password salah!</p>}
                 <button type="submit" className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl shadow-lg">Masuk</button>
               </form>
+            ) : adminView === 'lazada' ? (
+              <LazadaSyncPanel onBack={() => setAdminView('menu')} />
             ) : (
               <div className="text-center space-y-4 py-4">
                 <div className="text-3xl mb-3">✅</div>
                 <h3 className="text-2xl font-bold">Akses Admin Berhasil</h3>
                 <a href={SANITY_STUDIO_URL} target="_blank" rel="noopener noreferrer" className="block w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-md">🚀 Buka Sanity Studio</a>
+                <button onClick={() => setAdminView('lazada')} className="w-full bg-[#0F146D] text-white font-bold py-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer hover:bg-[#1b2394] transition-colors">
+                  🛒 Sinkronisasi Lazada (dry-run)
+                </button>
                 <button onClick={handleDownloadWACatalog} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer hover:bg-green-700 transition-colors">
                   <Download size={20} /> Download CSV WA Business
                 </button>
