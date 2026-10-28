@@ -15,6 +15,13 @@ const GROQ_PRODUCT = `*[_type == "product"] | order(_createdAt desc) {
   condition, brand, brandId, lazadaCategoryId, tag, rating, reviews,
   order, sortOrder, urutan, isFeatured, featured, isUnggulan, showOnHome,
   shopeeUrl, shopee,
+  "categoryResolved": coalesce(
+    category->title, category->name, kategori->title, kategori->name,
+    categories[0]->title, categories[0]->name,
+    select(_type(category) == "string" => category, _type(kategori) == "string" => kategori),
+    ""
+  ),
+  "categorySlug": coalesce(category->slug.current, kategori->slug.current, ""),
   "mainImage": coalesce(image.asset->url, foto.asset->url, photo.asset->url, gambar.asset->url, ""),
   "galleryImages": coalesce(images[].asset->url, gallery[].asset->url, photos[].asset->url, [])
 }`;
@@ -89,7 +96,9 @@ export function normalizeProduct(item = {}) {
     brand: asText(item.brand),
     brandId: asText(item.brandId),
     lazadaCategoryId: asText(item.lazadaCategoryId),
-    category: asText(item.category),
+    // Kategori sering berupa referensi (link ke dokumen kategori), bukan teks.
+    // Pakai hasil resolve dari Sanity; kalau kosong baru pakai nilai mentah.
+    category: asText(item.categoryResolved) || asText(item.category) || asText(item.kategori) || asText(item.categorySlug),
     tag: asText(item.tag),
     rating: asNumber(item.rating),
     images,

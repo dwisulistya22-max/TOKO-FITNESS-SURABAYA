@@ -161,6 +161,14 @@ check('3 produk jadi siap kirim', split2.ready.length === 3, JSON.stringify(spli
 check('daftar kategori Sanity terhitung', listSanityCategories(kosong).length === 2);
 check('SKU tidak menimpa yang sudah ada', buildBulkOverrides([normalizeProduct({ _id: 'x', sku: 'SUDAH-ADA' })], { skuPrefix: 'TFS-' }).overridesById.x?.sku === undefined);
 
+console.log('\n11) Kategori Sanity berupa referensi tetap terbaca:');
+const refProd = normalizeProduct({ _id: 'ref-1', name: 'Treadmill', categoryResolved: 'Treadmill', category: { _ref: 'x', _type: 'reference' } });
+check('referensi -> judul kategori', refProd.category === 'Treadmill', refProd.category);
+const slugProd = normalizeProduct({ _id: 'ref-2', name: 'Matras', categoryResolved: '', category: null, categorySlug: 'rubber-flooring' });
+check('fallback ke slug', slugProd.category === 'rubber-flooring', slugProd.category);
+const textProd = normalizeProduct({ _id: 'ref-3', name: 'Barbel', categoryResolved: '', category: 'Alat Beban' });
+check('kategori teks tetap dipakai', textProd.category === 'Alat Beban', textProd.category);
+
 console.log(`\n== Hasil: ${pass} lolos, ${fail} gagal ==`);
 if (fail > 0) process.exit(1);
 console.log('Self-test HIJAU.');

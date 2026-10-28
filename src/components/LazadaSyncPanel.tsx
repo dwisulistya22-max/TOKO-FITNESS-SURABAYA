@@ -422,7 +422,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
           <p className="text-xs font-black mb-1">Kategori Lazada per jenis produk</p>
           <div className="flex gap-1.5 mb-1.5">
             <input className={inputCls} placeholder="Cari kategori Lazada (mis. treadmill)" value={catSearch} onChange={(e) => setCatSearch(e.target.value)} />
-            <button onClick={() => fetchCategories(catSearch)} disabled={!!catBusy || status?.syncBlocked} className="bg-purple-700 text-white text-[11px] font-bold px-3 rounded-xl disabled:opacity-40">
+            <button onClick={() => fetchCategories(catSearch)} disabled={!!catBusy || !status?.credentialsComplete} title={!status?.credentialsComplete ? 'Butuh App Key + Access Token di server' : 'Ambil kategori asli dari Lazada'} className="bg-purple-700 text-white text-[11px] font-bold px-3 rounded-xl disabled:opacity-40">
               {catBusy ? '…' : 'Ambil'}
             </button>
           </div>
