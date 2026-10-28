@@ -201,7 +201,10 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     try {
       const r = await fetch(`/api/lazada/categories?leaf=1${force ? '&refresh=1' : ''}`, { cache: 'no-store' });
       const data = await r.json();
-      if (!r.ok) { setCatMsg(`❌ ${data?.error || 'Gagal memuat kategori'} ${data?.lazadaMessage || ''}`); return; }
+      if (!r.ok) {
+        setCatMsg(`❌ ${data?.error || 'Gagal memuat kategori'} ${data?.lazadaMessage || data?.detail || ''}`);
+        return;
+      }
       setCatAll(data.categories || []);
       setCatMsg(`✅ ${data.categories?.length || 0} kategori Lazada siap dipilih. Ketik di kotak tiap jenis produk untuk mencari.`);
     } catch (e: any) { setCatMsg(`❌ ${e?.message || e}`); }

@@ -33,10 +33,12 @@ export default async function handler(req, res) {
 
   const env = process.env;
   const status = lazadaEnvStatus(env);
-  if (status.syncBlocked) {
+  // Membaca kategori TIDAK mengirim apa pun, jadi cukup kredensial —
+  // tidak perlu menunggu saklar sinkron (LAZADA_SYNC_ENABLED) dibuka.
+  if (!status.credentialsComplete) {
     return res.status(409).json({
       error: 'Belum tersambung ke Lazada.',
-      detail: 'Butuh App Key + App Secret + Access Token.',
+      detail: 'Butuh App Key + App Secret + Access Token di server.',
       status,
     });
   }
