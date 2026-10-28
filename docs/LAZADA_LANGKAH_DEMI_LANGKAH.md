@@ -200,7 +200,8 @@ bukan satu per satu.
 **A. Ambil kategori asli dari Lazada**
 
 1. Panel **Sinkronisasi Lazada** → bagian **4) Kirim SEMUA produk** → kotak **Kategori Lazada per jenis produk**.
-2. Ketik kata kunci (mis. `treadmill`) lalu klik **Ambil**. Muncul daftar `category_id` + jalur lengkap.
+2. Daftar jenis produk diambil otomatis dari Sanity (9 jenis, mis. *Treadmill & Walking Pad*, *Rubber Flooring*).
+   Ketik kata kunci (mis. `treadmill`) lalu klik **Ambil**. Muncul daftar `category_id` + jalur lengkap.
    Daftar ini diambil **langsung dari Lazada**, bukan ditebak.
 
 **B. Isi cepat massal**
