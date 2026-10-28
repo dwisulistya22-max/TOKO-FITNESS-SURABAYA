@@ -137,6 +137,39 @@ Itu saja. **Tidak ada pengiriman massal.** Semua pengiriman harus 1 per 1 dengan
 
 ---
 
+## LANGKAH 4b — Ambil Access Token lewat otorisasi toko
+
+Aplikasi bertipe **Seller In-house APP** memakai kebijakan *Allow binding users to authorize*, jadi toko Anda
+harus didaftarkan dulu di whitelist baru bisa memberi izin.
+
+1. **Open Platform** → **App Management** → **Manage** aplikasi **Toko Fitness Surabaya**
+2. Gulir paling bawah → **Authorized Seller Whitelist** → **+ Add**
+   - **Seller ID** = *Kode Pendek* di Seller Center → Pengaturan (contoh: `ID68PMOYJZ`)
+   - **Seller Email** + **Password** = email & password login Seller Center
+   - **Country** = **Indonesia** → **Submit**
+3. Buka alamat otorisasi ini di browser (ganti `client_id` bila App Key berbeda):
+
+   ```
+   https://auth.lazada.com/oauth/authorize?response_type=code&force_auth=true&redirect_uri=https%3A%2F%2Ftokofitnesssurabaya.com&client_id=143555
+   ```
+
+4. Login dengan akun Seller Center → klik **Agree/Authorize**. Browser akan kembali ke
+   `https://tokofitnesssurabaya.com/?code=XXXX` → **salin nilai `code` dari address bar**.
+5. Dalam **30 menit**, buka:
+
+   ```
+   https://tokofitnesssurabaya.com/api/lazada/auth?code=KODE_TADI
+   ```
+
+   Halaman akan menampilkan **LAZADA_ACCESS_TOKEN** dan **LAZADA_REFRESH_TOKEN**. Simpan ke Notepad.
+6. Masukkan ke Vercel: `LAZADA_APP_KEY`, `LAZADA_APP_SECRET`, `LAZADA_ACCESS_TOKEN`,
+   `LAZADA_REFRESH_TOKEN`, `LAZADA_ADMIN_KEY`, dan `LAZADA_SYNC_ENABLED=false` → **Redeploy**.
+
+> Kode otorisasi hanya berlaku 30 menit dan sekali pakai. Bila kedaluwarsa, ulangi Langkah 4.
+> Token hanya ditampilkan di layar Anda sendiri; server tidak menyimpannya.
+
+---
+
 ## Ringkasan singkat
 
 ```
