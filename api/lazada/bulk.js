@@ -17,6 +17,7 @@ import {
   lazadaEnvStatus, readJsonBody, callLazadaCreate, delay,
   BULK_MAX_IDS_PER_CALL, BULK_MAX_TOTAL,
 } from '../_lib/lazada.js';
+import { buildBulkOverrides, listSanityCategories, normalizeConfig } from '../_lib/lazada-defaults.js';
 
 const BULK_DELAY_MS = 350;
 
@@ -30,10 +31,23 @@ export default async function handler(req, res) {
   const status = lazadaEnvStatus(env);
   const body = await readJsonBody(req);
   const action = String(body.action || 'plan').toLowerCase();
-  const overridesById = body.overrides && typeof body.overrides === 'object' ? body.overrides : {};
+  const explicitOverrides = body.overrides && typeof body.overrides === 'object' ? body.overrides : {};
 
   const { products, error, projectId } = await fetchSanityProducts();
   if (!products.length) return res.status(502).json({ error: `Sanity tidak menjawab: ${error}` });
+
+  // Nilai isi-cepat dari admin digabung dengan overrides eksplisit (overrides menang).
+  const bulk = buildBulkOverrides(products, body.config || {});
+  const overridesById = { ...bulk.overridesById };
+  for (const [id, o] of Object.entries(explicitOverrides)) {
+    overridesById[id] = { ...(overridesById[id] || {}), ...o };
+  }
+  const configInfo = {
+    used: Object.keys(overridesById).length,
+    notes: bulk.notes,
+    effective: normalizeConfig(body.config || {}),
+    sanityCategories: listSanityCategories(products),
+  };
 
   // ---------- 1) PLAN: hanya membaca & menghitung, tidak mengirim apa pun ----------
   if (action === 'plan') {
@@ -52,6 +66,7 @@ export default async function handler(req, res) {
       maxTotalPerRequest: BULK_MAX_TOTAL,
       ready: ready.map((r) => ({ id: r.id, name: r.name, sku: r.sku })),
       invalid,
+      config: configInfo,
       syncBlocked: status.syncBlocked,
       note: status.syncBlocked
         ? 'Rencana saja — sinkron masih TERKUNCI (flag/kredensial belum lengkap). Tidak ada yang dikirim.'
@@ -136,6 +151,7 @@ export default async function handler(req, res) {
     results,
     skippedInvalid: invalid.length,
     invalid: invalid.slice(0, 30),
+    config: configInfo,
     stayedInQueue: skippedByLimit,
     totalValid: ready.length,
     totalChecked: pool.length,

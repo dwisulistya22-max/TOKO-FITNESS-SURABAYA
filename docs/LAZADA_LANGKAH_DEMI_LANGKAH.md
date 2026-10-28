@@ -192,6 +192,36 @@ Aturan yang selalu berlaku:
 
 ---
 
+## LANGKAH 9 — Melengkapi data 291 produk sekaligus (isi cepat massal)
+
+Hampir semua produk belum punya SKU, brand, berat, dimensi, dan kategori Lazada. Isi lewat panel,
+bukan satu per satu.
+
+**A. Ambil kategori asli dari Lazada**
+
+1. Panel **Sinkronisasi Lazada** → bagian **4) Kirim SEMUA produk** → kotak **Kategori Lazada per jenis produk**.
+2. Ketik kata kunci (mis. `treadmill`) lalu klik **Ambil**. Muncul daftar `category_id` + jalur lengkap.
+   Daftar ini diambil **langsung dari Lazada**, bukan ditebak.
+
+**B. Isi cepat massal**
+
+3. Isi **Brand** (mis. `No Brand`) dan **Awalan SKU** (mis. `TFS-`). SKU otomatis mengikuti urutan produk
+   (`TFS-0001`, `TFS-0002`, …) dan **hanya mengisi produk yang SKU-nya kosong**.
+4. Isi **Berat umum** dan **P/L/T umum** — atau isi per jenis produk (lebih akurat, mis. Treadmill 45 kg
+   vs Rubber Flooring 8 kg).
+5. Isi `category_id` Lazada untuk tiap jenis produk, lalu klik **Simpan profil** (tersimpan di browser).
+6. Klik **1. Hitung rencana** → angka **siap** akan naik.
+
+**C. Kirim** (setelah yakin)
+
+7. Isi `LAZADA_ADMIN_KEY` dan `LAZADA_SYNC_ENABLED=true` di Vercel → **Redeploy**.
+8. Centang persetujuan → ketik kunci admin → klik **2. KIRIM semua produk yang siap** (maks 5 per putaran).
+
+> Semua angka yang dipakai berasal dari isian Anda sendiri. Kalau ada kolom yang Anda kosongkan,
+> produk itu tetap dianggap **tidak siap** dan dilaporkan alasannya.
+
+---
+
 ## Ringkasan singkat
 
 ```

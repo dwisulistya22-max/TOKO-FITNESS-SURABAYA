@@ -49,6 +49,14 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [bulkAdminKey, setBulkAdminKey] = useState('');
   const [bulkResults, setBulkResults] = useState<any[]>([]);
+  // --- isi cepat massal (nilai EKSPLISIT dari admin, bukan tebakan) ---
+  const [cfg, setCfg] = useState<any>({ brand: '', brandId: '', weightGrams: '', lengthCm: '', widthCm: '', heightCm: '', stock: '', skuPrefix: '', skuPad: 4, skuStart: 1, categoryMap: {}, perCategory: {} });
+  const [cfgMsg, setCfgMsg] = useState('');
+  const [catList, setCatList] = useState<any[]>([]);
+  const [catMsg, setCatMsg] = useState('');
+  const [catBusy, setCatBusy] = useState('');
+  const [catSearch, setCatSearch] = useState('');
+  const [sanityCats, setSanityCats] = useState<{ name: string; count: number }[]>([]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -72,6 +80,12 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   };
 
   useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('lazada-bulk-config-v1');
+      if (raw) setCfg(JSON.parse(raw));
+    } catch { /* abaikan */ }
+  }, []);
 
   const buildOverrides = () => {
     const o: Record<string, any> = {};
@@ -155,12 +169,52 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     setActionMsg(`✅ ${data.message} — verifikasi di Seller Center.`);
   };
 
+  // Simpan/muat profil isi-cepat dari browser (tidak dikirim ke server).
+  const CFG_KEY = 'lazada-bulk-config-v1';
+  const loadCfg = () => {
+    try {
+      const raw = localStorage.getItem(CFG_KEY);
+      if (raw) { setCfg(JSON.parse(raw)); setCfgMsg('Profil tersimpan dimuat.'); }
+      else setCfgMsg('Belum ada profil tersimpan.');
+    } catch { setCfgMsg('Profil tidak bisa dibaca.'); }
+  };
+  const saveCfg = () => {
+    try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); setCfgMsg('✅ Profil isi-cepat disimpan di browser ini.'); }
+    catch { setCfgMsg('❌ Gagal menyimpan profil.'); }
+  };
+
+  const fetchCategories = async (keyword = '') => {
+    setCatBusy('load'); setCatMsg('');
+    try {
+      const r = await fetch(`/api/lazada/categories?leaf=1&refresh=1${keyword ? `&q=${encodeURIComponent(keyword)}` : ''}`, { cache: 'no-store' });
+      const data = await r.json();
+      if (!r.ok) { setCatMsg(`❌ ${data?.error || 'Gagal memuat kategori'} ${data?.lazadaMessage || ''}`); setCatList([]); return; }
+      setCatList(data.categories || []);
+      setCatMsg(`✅ ${data.shown} kategori daun dari Lazada (total ${data.total}).`);
+    } catch (e: any) { setCatMsg(`❌ ${e?.message || e}`); }
+    setCatBusy('');
+  };
+
+  const setCatIdFor = (name: string, id: string) => {
+    setCfg((prev: any) => ({ ...prev, categoryMap: { ...(prev.categoryMap || {}), [name]: id } }));
+  };
+  const setCatField = (name: string, field: string, value: string) => {
+    setCfg((prev: any) => ({
+      ...prev,
+      perCategory: {
+        ...(prev.perCategory || {}),
+        [name]: { ...((prev.perCategory || {})[name] || {}), [field]: value },
+      },
+    }));
+  };
+
   const handleBulkPlan = async () => {
     setBulkBusy('plan'); setBulkMsg(''); setBulkResults([]);
-    const { r, data } = await callJson('/api/lazada/bulk', { action: 'plan' });
+    const { r, data } = await callJson('/api/lazada/bulk', { action: 'plan', config: cfg });
     setBulkBusy('');
     if (!r.ok) { setBulkMsg(`❌ ${data?.error || 'Gagal menghitung rencana.'}`); return; }
     setBulkPlan(data);
+    if (Array.isArray(data.config?.sanityCategories)) setSanityCats(data.config.sanityCategories);
     setBulkMsg(
       `Rencana: ${data.readyCount} produk siap dikirim, ${data.invalidCount} produk perlu diperbaiki. ` +
       `Dikirim ${data.batchSize} per putaran (butuh ${data.batchesNeeded} putaran). Tidak ada yang dikirim.`
@@ -173,7 +227,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     if (!bulkAdminKey.trim()) { setBulkMsg('❌ Masukkan kunci admin (diketik per aksi, tidak disimpan).'); return; }
     setBulkBusy('send'); setBulkMsg(''); setBulkResults([]);
     const { r, data } = await callJson('/api/lazada/bulk', {
-      action: 'send', confirm: true, adminKey: bulkAdminKey.trim(),
+      action: 'send', confirm: true, adminKey: bulkAdminKey.trim(), config: cfg,
     });
     setBulkBusy('');
     setBulkAdminKey(''); setBulkConfirm(false);
@@ -190,9 +244,24 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     handleBulkPlan();
   };
 
-  const handleDownloadAll = () => {
-    window.open('/api/lazada/export-all', '_blank');
-    setBulkMsg('📄 CSV semua produk diunduh (termasuk yang belum valid, ada kolom status).');
+  const handleDownloadAll = async () => {
+    setBulkMsg('Menyiapkan CSV…');
+    try {
+      const r = await fetch('/api/lazada/export-all', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: cfg }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        setBulkMsg(`❌ ${d?.error || 'Gagal membuat CSV.'}`);
+        return;
+      }
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `lazada-semua-produk-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setBulkMsg('📄 CSV semua produk diunduh (mencerminkan data isi-cepat, ada kolom status).');
+    } catch (e: any) { setBulkMsg(`❌ ${e?.message || e}`); }
   };
 
   const selected = products.find((p) => p.id === selectedId);
@@ -309,6 +378,11 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
               Total {bulkPlan.total} produk · <span className="text-green-700">siap {bulkPlan.readyCount}</span> ·{' '}
               <span className="text-red-700">perlu diperbaiki {bulkPlan.invalidCount}</span>
             </div>
+            {Array.isArray(bulkPlan.config?.notes) && bulkPlan.config.notes.length > 0 && (
+              <div className="text-[10px] text-blue-800 mt-1">
+                {bulkPlan.config.notes.map((n: string, i: number) => <div key={i}>• {n}</div>)}
+              </div>
+            )}
             {bulkPlan.invalid?.length > 0 && (
               <div className="max-h-32 overflow-y-auto space-y-1 mt-1">
                 {bulkPlan.invalid.slice(0, 20).map((x: any) => (
@@ -321,6 +395,65 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
             )}
           </div>
         )}
+
+        <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-2 mb-3">
+          <p className="text-xs font-black mb-1">Isi cepat massal (nilai dari Anda, bukan tebakan)</p>
+          <p className="text-[10px] text-gray-600 mb-2">
+            Dipakai hanya untuk kolom yang Anda isi. SKU otomatis hanya mengisi produk yang SKU-nya kosong.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+            <input className={inputCls} placeholder="Brand (mis. No Brand)" value={cfg.brand || ''} onChange={(e) => setCfg({ ...cfg, brand: e.target.value })} />
+            <input className={inputCls} placeholder="Awalan SKU (mis. TFS-)" value={cfg.skuPrefix || ''} onChange={(e) => setCfg({ ...cfg, skuPrefix: e.target.value })} />
+            <input className={inputCls} placeholder="Berat umum (gram)" inputMode="numeric" value={cfg.weightGrams ?? ''} onChange={(e) => setCfg({ ...cfg, weightGrams: e.target.value })} />
+            <input className={inputCls} placeholder="Stok (kosongkan = pakai Sanity)" inputMode="numeric" value={cfg.stock ?? ''} onChange={(e) => setCfg({ ...cfg, stock: e.target.value })} />
+            <input className={inputCls} placeholder="P umum (cm)" inputMode="numeric" value={cfg.lengthCm ?? ''} onChange={(e) => setCfg({ ...cfg, lengthCm: e.target.value })} />
+            <input className={inputCls} placeholder="L umum (cm)" inputMode="numeric" value={cfg.widthCm ?? ''} onChange={(e) => setCfg({ ...cfg, widthCm: e.target.value })} />
+            <input className={inputCls} placeholder="T umum (cm)" inputMode="numeric" value={cfg.heightCm ?? ''} onChange={(e) => setCfg({ ...cfg, heightCm: e.target.value })} />
+            <input className={inputCls} placeholder="Mulai nomor SKU" inputMode="numeric" value={cfg.skuStart ?? 1} onChange={(e) => setCfg({ ...cfg, skuStart: e.target.value })} />
+          </div>
+          <div className="flex gap-1.5">
+            <button onClick={saveCfg} className="flex-1 bg-white border text-[11px] font-bold py-1.5 rounded-lg">Simpan profil</button>
+            <button onClick={loadCfg} className="flex-1 bg-white border text-[11px] font-bold py-1.5 rounded-lg">Muat profil</button>
+          </div>
+          {cfgMsg && <p className="text-[10px] font-bold text-blue-800 mt-1">{cfgMsg}</p>}
+        </div>
+
+        <div className="rounded-xl border border-purple-200 bg-purple-50/60 p-2 mb-3">
+          <p className="text-xs font-black mb-1">Kategori Lazada per jenis produk</p>
+          <div className="flex gap-1.5 mb-1.5">
+            <input className={inputCls} placeholder="Cari kategori Lazada (mis. treadmill)" value={catSearch} onChange={(e) => setCatSearch(e.target.value)} />
+            <button onClick={() => fetchCategories(catSearch)} disabled={!!catBusy || status?.syncBlocked} className="bg-purple-700 text-white text-[11px] font-bold px-3 rounded-xl disabled:opacity-40">
+              {catBusy ? '…' : 'Ambil'}
+            </button>
+          </div>
+          {catMsg && <p className="text-[10px] font-bold text-purple-800 mb-1">{catMsg}</p>}
+          {catList.length > 0 && (
+            <div className="max-h-28 overflow-y-auto bg-white border rounded-lg p-1 mb-2 space-y-0.5">
+              {catList.map((c: any) => (
+                <div key={c.id} className="text-[10px] text-gray-700 flex gap-1">
+                  <code className="bg-gray-100 rounded px-1">{c.id}</code>
+                  <span className="truncate">{c.path}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {sanityCats.length === 0 && <p className="text-[10px] text-gray-600">Klik "1. Hitung rencana" dulu agar daftar jenis produk Sanity muncul di sini.</p>}
+          {sanityCats.map((sc) => {
+            const per = (cfg.perCategory || {})[sc.name] || {};
+            return (
+              <div key={sc.name} className="bg-white border rounded-lg p-1.5 mb-1.5">
+                <div className="text-[11px] font-bold mb-1">{sc.name} <span className="text-gray-400">({sc.count} produk)</span></div>
+                <div className="grid grid-cols-2 gap-1">
+                  <input className={inputCls} placeholder="category_id Lazada" value={cfg.categoryMap?.[sc.name] || ''} onChange={(e) => setCatIdFor(sc.name, e.target.value)} />
+                  <input className={inputCls} placeholder="Berat jenis ini (gram)" inputMode="numeric" value={per.weightGrams ?? ''} onChange={(e) => setCatField(sc.name, 'weightGrams', e.target.value)} />
+                  <input className={inputCls} placeholder="P (cm)" inputMode="numeric" value={per.lengthCm ?? ''} onChange={(e) => setCatField(sc.name, 'lengthCm', e.target.value)} />
+                  <input className={inputCls} placeholder="L (cm)" inputMode="numeric" value={per.widthCm ?? ''} onChange={(e) => setCatField(sc.name, 'widthCm', e.target.value)} />
+                  <input className={inputCls} placeholder="T (cm)" inputMode="numeric" value={per.heightCm ?? ''} onChange={(e) => setCatField(sc.name, 'heightCm', e.target.value)} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         <label className="flex items-start gap-2 text-xs font-bold text-gray-700 mb-2">
           <input type="checkbox" checked={bulkConfirm} onChange={(e) => setBulkConfirm(e.target.checked)} className="mt-0.5" />
