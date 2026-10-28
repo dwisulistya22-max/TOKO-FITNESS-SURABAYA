@@ -36,7 +36,22 @@ const escapeHtml = (s) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-function renderPage({ ok, title, rows = [], note = '' }) {
+// Sidik jari rahasia: cukup untuk memastikan nilainya benar, tanpa membocorkan isinya.
+function secretFingerprint(value) {
+  const v = String(value || '');
+  const flags = [];
+  if (!v) flags.push('KOSONG');
+  if (v !== v.trim()) flags.push('ADA SPASI DI UJUNG');
+  if (/^["']/.test(v) || /["']$/.test(v)) flags.push('ADA TANDA KUTIP');
+  if (v.startsWith('LAZADA_')) flags.push('IKUT TERSALIN NAMA VARIABEL');
+  if (v.startsWith('sk_live') || v.startsWith('sk_test')) flags.push('INI KUNCI PEMBAYARAN (Stripe), BUKAN LAZADA');
+  if (v && v.length !== 32) flags.push(`PANJANG ${v.length} (Lazada biasanya 32)`);
+  const head = v.slice(0, 4);
+  const tail = v.slice(-2);
+  return `${head}…${tail} | panjang ${v.length} | ${flags.length ? '⚠ ' + flags.join(' ; ') : '✔ bentuk wajar'}`;
+}
+
+function renderPage({ ok, title, rows = [], note = '', serverRows = [] }) {
   const body = rows
     .map(
       (r) => `
@@ -46,6 +61,15 @@ function renderPage({ ok, title, rows = [], note = '' }) {
       </div>`,
     )
     .join('');
+  const serverBlock = serverRows.length
+    ? `<div class="server"><div class="serverTitle">Pemeriksaan kunci di server (rahasia disamarkan)</div>${serverRows
+        .map(
+          (r) => `<div class="srv"><span class="srvLabel">${escapeHtml(r.label)}</span><code>${escapeHtml(
+            r.value,
+          )}</code></div>`,
+        )
+        .join('')}</div>`
+    : '';
   return `<!doctype html><html lang="id"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>${escapeHtml(title)}</title>
@@ -60,10 +84,16 @@ function renderPage({ ok, title, rows = [], note = '' }) {
     padding:10px;border:1px solid #dfe3e8;border-radius:10px;background:#fbfcfd;resize:vertical;word-break:break-all}
   .note{margin-top:18px;font-size:13px;line-height:1.6;background:#fff8e6;border:1px solid #f2d38b;border-radius:10px;padding:12px}
   ul{font-size:13px;line-height:1.7;padding-left:18px}
+  .server{margin-top:22px;border-top:1px dashed #dfe3e8;padding-top:14px}
+  .serverTitle{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;margin-bottom:10px}
+  .srv{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin:8px 0;font-size:13px}
+  .srvLabel{color:#374151}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f3f4f6;border-radius:6px;padding:3px 7px;word-break:break-all}
 </style></head><body><div class="card">
 <h1 class="${ok ? 'ok' : 'bad'}">${escapeHtml(title)}</h1>
 ${body}
 ${note ? `<div class="note">${note}</div>` : ''}
+${serverBlock}
 </div></body></html>`;
 }
 
@@ -84,6 +114,17 @@ export default async function handler(req, res) {
   const code = String(body.code || q.code || '').trim();
   const adminKey = String(body.adminKey || q.adminKey || '').trim();
 
+  const serverRows = [
+    {
+      label: 'App Key',
+      value: env.LAZADA_APP_KEY ? String(env.LAZADA_APP_KEY) : '(kosong)',
+    },
+    {
+      label: 'App Secret',
+      value: secretFingerprint(env.LAZADA_APP_SECRET),
+    },
+  ];
+
   const fail = (statusCode, message, extra = {}) => {
     if (wantsHtml) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -92,6 +133,8 @@ export default async function handler(req, res) {
           ok: false,
           title: message,
           note: extra.note || '',
+          rows: extra.rows || [],
+          serverRows,
         }),
       );
     }
@@ -171,6 +214,7 @@ export default async function handler(req, res) {
                 { label: 'Refresh token berlaku (detik)', value: String(data.refresh_expires_in ?? '') },
               ],
               note,
+              serverRows,
             }),
           );
         }
@@ -196,8 +240,17 @@ export default async function handler(req, res) {
     }
   }
 
+  const attemptRows = attempts.map((a) => ({
+    label: `Lazada menjawab (${String(a.base || '').replace('https://', '')})`,
+    value: a.error
+      ? `GAGAL KONEKSI: ${a.error}`
+      : `HTTP ${a.httpStatus} · ${a.lazadaMessage || '(tanpa pesan)'}`,
+    big: true,
+  }));
+
   return fail(502, 'Lazada menolak kode otorisasi ini.', {
     attempts,
+    rows: attemptRows,
     note:
       'Kemungkinan penyebab: kode sudah kedaluwarsa (lebih dari 30 menit), kode sudah pernah dipakai, ' +
       'atau App Key/App Secret tidak cocok. Ulangi proses otorisasi untuk mendapatkan kode baru.',
