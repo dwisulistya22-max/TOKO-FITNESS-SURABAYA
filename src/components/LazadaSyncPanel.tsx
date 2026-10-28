@@ -53,6 +53,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const [cfg, setCfg] = useState<any>({ brand: '', brandId: '', weightGrams: '', lengthCm: '', widthCm: '', heightCm: '', stock: '', skuPrefix: '', skuPad: 4, skuStart: 1, categoryMap: {}, perCategory: {} });
   const [cfgMsg, setCfgMsg] = useState('');
   const [catList, setCatList] = useState<any[]>([]);
+  const [catAll, setCatAll] = useState<any[]>([]); // semua kategori daun untuk pilihan dropdown
   const [catMsg, setCatMsg] = useState('');
   const [catBusy, setCatBusy] = useState('');
   const [catSearch, setCatSearch] = useState('');
@@ -193,6 +194,30 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
       setCatMsg(`✅ ${data.shown} kategori daun dari Lazada (total ${data.total}).`);
     } catch (e: any) { setCatMsg(`❌ ${e?.message || e}`); }
     setCatBusy('');
+  };
+
+  const loadAllCategories = async (force = false) => {
+    setCatBusy('all'); setCatMsg('');
+    try {
+      const r = await fetch(`/api/lazada/categories?leaf=1${force ? '&refresh=1' : ''}`, { cache: 'no-store' });
+      const data = await r.json();
+      if (!r.ok) { setCatMsg(`❌ ${data?.error || 'Gagal memuat kategori'} ${data?.lazadaMessage || ''}`); return; }
+      setCatAll(data.categories || []);
+      setCatMsg(`✅ ${data.categories?.length || 0} kategori Lazada siap dipilih. Ketik di kotak tiap jenis produk untuk mencari.`);
+    } catch (e: any) { setCatMsg(`❌ ${e?.message || e}`); }
+    setCatBusy('');
+  };
+
+  // Muat otomatis sekali saat kredensial sudah lengkap.
+  useEffect(() => {
+    if (status?.credentialsComplete && catAll.length === 0) loadAllCategories(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.credentialsComplete]);
+
+  const catPathFor = (id: string) => {
+    if (!id) return '';
+    const found = catAll.find((c: any) => String(c.id) === String(id));
+    return found ? found.path : id;
   };
 
   const setCatIdFor = (name: string, id: string) => {
@@ -421,9 +446,8 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
         <div className="rounded-xl border border-purple-200 bg-purple-50/60 p-2 mb-3">
           <p className="text-xs font-black mb-1">Kategori Lazada per jenis produk</p>
           <div className="flex gap-1.5 mb-1.5">
-            <input className={inputCls} placeholder="Cari kategori Lazada (mis. treadmill)" value={catSearch} onChange={(e) => setCatSearch(e.target.value)} />
-            <button onClick={() => fetchCategories(catSearch)} disabled={!!catBusy || !status?.credentialsComplete} title={!status?.credentialsComplete ? 'Butuh App Key + Access Token di server' : 'Ambil kategori asli dari Lazada'} className="bg-purple-700 text-white text-[11px] font-bold px-3 rounded-xl disabled:opacity-40">
-              {catBusy ? '…' : 'Ambil'}
+            <button onClick={() => loadAllCategories(true)} disabled={!!catBusy || !status?.credentialsComplete} title={!status?.credentialsComplete ? 'Butuh App Key + Access Token di server' : 'Ambil daftar kategori asli dari Lazada'} className="flex-1 bg-purple-700 text-white text-[11px] font-bold py-2 rounded-xl disabled:opacity-40">
+              {catBusy === 'all' ? 'Memuat…' : `Muat daftar kategori Lazada (${catAll.length || 0})`}
             </button>
           </div>
           {catMsg && <p className="text-[10px] font-bold text-purple-800 mb-1">{catMsg}</p>}
@@ -437,6 +461,11 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
               ))}
             </div>
           )}
+          <datalist id="lazada-cat-options">
+            {catAll.map((c: any) => (
+              <option key={c.id} value={c.path}>{c.id}</option>
+            ))}
+          </datalist>
           {sanityCats.length === 0 && <p className="text-[10px] text-gray-600">Klik "1. Hitung rencana" dulu agar daftar jenis produk Sanity muncul di sini.</p>}
           {sanityCats.map((sc) => {
             const per = (cfg.perCategory || {})[sc.name] || {};
@@ -444,7 +473,19 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
               <div key={sc.name} className="bg-white border rounded-lg p-1.5 mb-1.5">
                 <div className="text-[11px] font-bold mb-1">{sc.name} <span className="text-gray-400">({sc.count} produk)</span></div>
                 <div className="grid grid-cols-2 gap-1">
-                  <input className={inputCls} placeholder="category_id Lazada" value={cfg.categoryMap?.[sc.name] || ''} onChange={(e) => setCatIdFor(sc.name, e.target.value)} />
+                  <input
+                    className={inputCls}
+                    list="lazada-cat-options"
+                    placeholder="ketik mis. treadmill lalu pilih"
+                    value={catPathFor(cfg.categoryMap?.[sc.name] || '')}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const found = catAll.find((c: any) => c.path === v);
+                      if (found) setCatIdFor(sc.name, String(found.id));
+                      else if (/^\d+$/.test(v.trim())) setCatIdFor(sc.name, v.trim());
+                      else setCatIdFor(sc.name, '');
+                    }}
+                  />
                   <input className={inputCls} placeholder="Berat jenis ini (gram)" inputMode="numeric" value={per.weightGrams ?? ''} onChange={(e) => setCatField(sc.name, 'weightGrams', e.target.value)} />
                   <input className={inputCls} placeholder="P (cm)" inputMode="numeric" value={per.lengthCm ?? ''} onChange={(e) => setCatField(sc.name, 'lengthCm', e.target.value)} />
                   <input className={inputCls} placeholder="L (cm)" inputMode="numeric" value={per.widthCm ?? ''} onChange={(e) => setCatField(sc.name, 'widthCm', e.target.value)} />
