@@ -3,6 +3,7 @@ import {
   normalizeProduct, validateProduct, buildLazadaPayload, buildLazadaCsv, lazadaEnvStatus,
   splitValidInvalid, buildLazadaCsvAll, lazadaSignVariants, BULK_MAX_IDS_PER_CALL,
 } from '../api/_lib/lazada.js';
+import { buildBulkOverrides, listSanityCategories } from '../api/_lib/lazada-defaults.js';
 
 let pass = 0; let fail = 0;
 const check = (name, cond, extra = '') => {
@@ -125,6 +126,40 @@ console.log('\n8) Tanda tangan Lazada (standar: path + parameter urut, HURUF BES
 const variants = lazadaSignVariants('/product/create', { app_key: '1', timestamp: '2', sign_method: 'sha256' }, 'rahasia');
 check('varian utama huruf besar 64 hex', /^[0-9A-F]{64}$/.test(variants[0].sign));
 check('ada 4 varian dicoba', variants.length === 4);
+
+console.log('\n9) Isi cepat massal: hanya mengisi yang diisi admin:');
+const kosong = ['A', 'B', 'C'].map((n, i) => normalizeProduct({
+  _id: `kosong-${n}`, name: `Produk ${n}`, price: 100000, stock: 3,
+  sku: '', weightGrams: '', lengthCm: '', widthCm: '', heightCm: '',
+  category: i < 2 ? 'Treadmill' : 'Rubber Flooring',
+  mainImage: 'https://cdn.sanity.io/images/x/prod/a.jpg',
+}));
+const cfg = {
+  brand: 'No Brand', skuPrefix: 'TFS-', skuPad: 4, skuStart: 1,
+  categoryMap: { Treadmill: '12345' },
+  perCategory: { Treadmill: { weightGrams: 45000, lengthCm: 160, widthCm: 70, heightCm: 30 } },
+};
+const built = buildBulkOverrides(kosong, cfg);
+check('semua produk dapat override', Object.keys(built.overridesById).length === 3);
+check('SKU otomatis berurutan', built.overridesById['kosong-A']?.sku === 'TFS-0001' && built.overridesById['kosong-B']?.sku === 'TFS-0002');
+check('berat khusus kategori dipakai', built.overridesById['kosong-A']?.weightGrams === 45000);
+check('kategori belum dipetakan dilaporkan', built.notes.some((n) => n.includes('kategori Lazada')));
+check('produk tanpa SKU & tanpa awalan dilaporkan', buildBulkOverrides(kosong, { brand: 'X' }).notes.some((n) => n.includes('SKU')));
+
+console.log('\n10) Isi cepat massal membuat produk jadi VALID:');
+const cfgLengkap = {
+  ...cfg,
+  categoryMap: { Treadmill: '12345', 'Rubber Flooring': '67890' },
+  perCategory: {
+    Treadmill: { weightGrams: 45000, lengthCm: 160, widthCm: 70, heightCm: 30 },
+    'Rubber Flooring': { weightGrams: 8000, lengthCm: 100, widthCm: 20, heightCm: 20 },
+  },
+};
+const built2 = buildBulkOverrides(kosong, cfgLengkap);
+const split2 = splitValidInvalid(kosong, built2.overridesById);
+check('3 produk jadi siap kirim', split2.ready.length === 3, JSON.stringify(split2.invalid));
+check('daftar kategori Sanity terhitung', listSanityCategories(kosong).length === 2);
+check('SKU tidak menimpa yang sudah ada', buildBulkOverrides([normalizeProduct({ _id: 'x', sku: 'SUDAH-ADA' })], { skuPrefix: 'TFS-' }).overridesById.x?.sku === undefined);
 
 console.log(`\n== Hasil: ${pass} lolos, ${fail} gagal ==`);
 if (fail > 0) process.exit(1);
