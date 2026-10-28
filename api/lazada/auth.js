@@ -10,8 +10,7 @@
 // - Bila LAZADA_ADMIN_KEY diisi di server, adminKey wajib cocok.
 // - Token yang dihasilkan HANYA ditampilkan di layar kamu sendiri; tidak disimpan di server.
 
-import crypto from 'node:crypto';
-import { lazadaEnvStatus, readJsonBody } from '../_lib/lazada.js';
+import { lazadaEnvStatus, readJsonBody, lazadaSignVariants } from '../_lib/lazada.js';
 
 // Endpoint /auth Lazada memakai host global. Beberapa akun memerlukan host negara.
 const TOKEN_BASES = [
@@ -19,15 +18,6 @@ const TOKEN_BASES = [
   'https://api.lazada.com/rest',
   'https://api.lazada.co.id/rest',
 ];
-
-function signParams(params, appSecret) {
-  const sorted = Object.keys(params)
-    .filter((k) => k !== 'sign')
-    .sort()
-    .map((k) => `${k}${params[k]}`)
-    .join('');
-  return crypto.createHmac('sha256', appSecret).update(sorted).digest('hex');
-}
 
 const escapeHtml = (s) =>
   String(s ?? '')
@@ -167,18 +157,25 @@ export default async function handler(req, res) {
   }
 
   const attempts = [];
+  const API_PATH = '/auth/token/create';
+  // Coba setiap host x setiap varian tanda tangan sampai ada yang diterima Lazada.
+  const signAttempts = [];
   for (const base of TOKEN_BASES) {
-    try {
-      const timestamp = String(Date.now());
-      const params = {
-        app_key: env.LAZADA_APP_KEY,
-        timestamp,
-        sign_method: 'sha256',
-        code,
-      };
-      params.sign = signParams(params, env.LAZADA_APP_SECRET);
+    const timestamp = String(Date.now());
+    const baseParams = {
+      app_key: env.LAZADA_APP_KEY,
+      timestamp,
+      sign_method: 'sha256',
+      code,
+    };
+    for (const variant of lazadaSignVariants(API_PATH, baseParams, env.LAZADA_APP_SECRET)) {
+      signAttempts.push({ base, variant: variant.name, params: { ...baseParams, sign: variant.sign } });
+    }
+  }
 
-      const r = await fetch(`${base}/auth/token/create`, {
+  for (const { base, variant, params } of signAttempts) {
+    try {
+      const r = await fetch(`${base}${API_PATH}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(params).toString(),
@@ -232,27 +229,38 @@ export default async function handler(req, res) {
 
       attempts.push({
         base,
+        variant,
         httpStatus: r.status,
-        lazadaMessage: data?.error_message || data?.errorMessage || data?.message || data?.error || text.slice(0, 300),
+        lazadaMessage:
+          data?.error_message || data?.errorMessage || data?.message ||
+          data?.error?.message || data?.error || text.slice(0, 300),
       });
     } catch (e) {
-      attempts.push({ base, error: `${e?.message || e}` });
+      attempts.push({ base, variant, error: `${e?.message || e}` });
     }
   }
 
-  const attemptRows = attempts.map((a) => ({
-    label: `Lazada menjawab (${String(a.base || '').replace('https://', '')})`,
-    value: a.error
+  const seen = new Set();
+  const attemptRows = [];
+  for (const a of attempts) {
+    const text = a.error
       ? `GAGAL KONEKSI: ${a.error}`
-      : `HTTP ${a.httpStatus} · ${a.lazadaMessage || '(tanpa pesan)'}`,
-    big: true,
-  }));
+      : `HTTP ${a.httpStatus} · ${a.lazadaMessage || '(tanpa pesan)'}`;
+    if (seen.has(text)) continue;
+    seen.add(text);
+    attemptRows.push({
+      label: `Lazada menjawab (${String(a.base || '').replace('https://', '')} · ${a.variant || '-'})`,
+      value: text,
+      big: true,
+    });
+  }
 
   return fail(502, 'Lazada menolak kode otorisasi ini.', {
     attempts,
     rows: attemptRows,
     note:
-      'Kemungkinan penyebab: kode sudah kedaluwarsa (lebih dari 30 menit), kode sudah pernah dipakai, ' +
-      'atau App Key/App Secret tidak cocok. Ulangi proses otorisasi untuk mendapatkan kode baru.',
+      'Kemungkinan penyebab: kode sudah kedaluwarsa (lebih dari 30 menit) atau sudah pernah dipakai. ' +
+      'Kalau pesan Lazada menyebut <b>signature</b>, berarti format tanda tangan belum cocok — ' +
+      'bukan salah Anda. Minta kode baru lalu ulangi.',
   });
 }

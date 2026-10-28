@@ -2,6 +2,7 @@
 // Inti integrasi Sanity -> Lazada Open Platform. Tanpa dependensi (Node 18+ / Vercel).
 // Prinsip: TIDAK MENEBAK data kosong. Field kosong => error validasi.
 
+import crypto from 'node:crypto';
 import { lookupLazadaCategoryId } from './lazada-category-map.js';
 
 export const SANITY_PROJECT_IDS = ['qi4rocc0', '856jrik3'];
@@ -321,4 +322,36 @@ export function readJsonBody(req) {
     });
     req.on('error', () => resolve({}));
   });
+}
+
+// ---------------------------------------------------------------------------
+// Tanda tangan (signature) Lazada Open Platform.
+// Standar Lazada: urutkan parameter (kecuali "sign"), gabung "key+value",
+// awali dengan nama API (contoh "/auth/token/create"), lalu HMAC-SHA256
+// dan hasilnya HURUF BESAR.
+// Beberapa akun/SDK memakai variasi lain, jadi kita sediakan beberapa varian
+// dan memakai yang pertama diterima server.
+// ---------------------------------------------------------------------------
+export function lazadaSignBase(params) {
+  return Object.keys(params)
+    .filter((k) => k !== 'sign' && params[k] !== undefined && params[k] !== null)
+    .sort()
+    .map((k) => `${k}${params[k]}`)
+    .join('');
+}
+
+export function lazadaSignVariants(apiPath, params, appSecret) {
+  const base = lazadaSignBase(params);
+  const secret = String(appSecret || '');
+  const hex = (s) => crypto.createHmac('sha256', secret).update(s, 'utf8').digest('hex');
+  return [
+    { name: 'apiPath+uppercase', sign: hex(`${apiPath}${base}`).toUpperCase() },
+    { name: 'apiPath+lowercase', sign: hex(`${apiPath}${base}`) },
+    { name: 'params+uppercase', sign: hex(base).toUpperCase() },
+    { name: 'params+lowercase', sign: hex(base) },
+  ];
+}
+
+export function lazadaSign(apiPath, params, appSecret) {
+  return lazadaSignVariants(apiPath, params, appSecret)[0].sign;
 }
