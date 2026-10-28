@@ -2,22 +2,11 @@
 // Body: { id, confirm: true, overrides?, adminKey }
 // KUNCI GANDA: LAZADA_SYNC_ENABLED=true + kredensial lengkap + adminKey cocok + confirm:true + validasi VALID.
 
-import crypto from 'node:crypto';
 import {
-  fetchSanityProducts, validateProduct, buildLazadaPayload, lazadaEnvStatus, readJsonBody,
+  fetchSanityProducts, validateProduct, buildLazadaPayload, lazadaEnvStatus, readJsonBody, lazadaSign,
 } from '../_lib/lazada.js';
 
 const DEFAULT_API_BASE = 'https://api.lazada.co.id/rest';
-
-function signParams(params, appSecret) {
-  // Lazada: HMAC-SHA256 atas parameter terurut (key+value), tanpa 'sign'.
-  const sorted = Object.keys(params)
-    .filter((k) => k !== 'sign')
-    .sort()
-    .map((k) => `${k}${params[k]}`)
-    .join('');
-  return crypto.createHmac('sha256', appSecret).update(sorted).digest('hex');
-}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -74,7 +63,8 @@ export default async function handler(req, res) {
       access_token: env.LAZADA_ACCESS_TOKEN,
       payload: JSON.stringify(lazadaRequest),
     };
-    params.sign = signParams(params, env.LAZADA_APP_SECRET);
+    // Standar Lazada: HMAC-SHA256(secret, "/product/create" + parameter terurut), huruf besar.
+    params.sign = lazadaSign('/product/create', params, env.LAZADA_APP_SECRET);
 
     const r = await fetch(`${base}/product/create`, {
       method: 'POST',
