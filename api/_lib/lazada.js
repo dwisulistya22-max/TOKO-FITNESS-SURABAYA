@@ -16,9 +16,8 @@ const GROQ_PRODUCT = `*[_type == "product"] | order(_createdAt desc) {
   order, sortOrder, urutan, isFeatured, featured, isUnggulan, showOnHome,
   shopeeUrl, shopee,
   "categoryResolved": coalesce(
-    category->title, category->name, kategori->title, kategori->name,
-    categories[0]->title, categories[0]->name,
-    select(_type(category) == "string" => category, _type(kategori) == "string" => kategori),
+    category->name, kategori->name, categories[0]->name,
+    category->title, kategori->title, categories[0]->title,
     ""
   ),
   "categorySlug": coalesce(category->slug.current, kategori->slug.current, ""),
@@ -45,25 +44,47 @@ export function isPlaceholderImage(url) {
   return PLACEHOLDER_PATTERNS.some((p) => u.includes(p));
 }
 
+// Query cadangan (sederhana) supaya satu salah tulis tidak mematikan seluruh panel.
+const GROQ_PRODUCT_SIMPLE = `*[_type == "product"] | order(_createdAt desc) {
+  _id, name, title, nama, price, discountPrice, description, specs,
+  stock, sku, weightGrams, lengthCm, widthCm, heightCm,
+  condition, brand, brandId, lazadaCategoryId, tag, rating, reviews,
+  category, kategori,
+  "mainImage": coalesce(image.asset->url, foto.asset->url, photo.asset->url, gambar.asset->url, ""),
+  "galleryImages": coalesce(images[].asset->url, gallery[].asset->url, photos[].asset->url, [])
+}`;
+
+async function querySanity(projectId, groq) {
+  const r = await fetch(
+    `https://${projectId}.api.sanity.io/${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(groq)}`,
+    { cache: 'no-store' },
+  );
+  const data = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, data };
+}
+
 export async function fetchSanityProducts() {
-  const query = encodeURIComponent(GROQ_PRODUCT);
   let lastError = '';
   for (const projectId of SANITY_PROJECT_IDS) {
-    try {
-      const r = await fetch(
-        `https://${projectId}.api.sanity.io/${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${query}`,
-        { cache: 'no-store' },
-      );
-      if (!r.ok) {
-        lastError = `HTTP ${r.status} dari project ${projectId}`;
-        continue;
+    for (const [label, groq] of [['utama', GROQ_PRODUCT], ['cadangan', GROQ_PRODUCT_SIMPLE]]) {
+      try {
+        const { ok, status, data } = await querySanity(projectId, groq);
+        if (!ok) {
+          const desc = data?.error?.description || data?.message || '';
+          lastError = `HTTP ${status} dari project ${projectId} (query ${label})${desc ? `: ${desc}` : ''}`;
+          continue;
+        }
+        if (Array.isArray(data?.result)) {
+          return {
+            projectId,
+            products: data.result.map(normalizeProduct),
+            error: '',
+            fallback: label === 'cadangan',
+          };
+        }
+      } catch (e) {
+        lastError = `${e?.message || e} (project ${projectId})`;
       }
-      const data = await r.json();
-      if (Array.isArray(data?.result)) {
-        return { projectId, products: data.result.map(normalizeProduct), error: '' };
-      }
-    } catch (e) {
-      lastError = `${e?.message || e} (project ${projectId})`;
     }
   }
   return { projectId: '', products: [], error: lastError || 'Sanity tidak menjawab' };
