@@ -42,6 +42,13 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const [confirmSync, setConfirmSync] = useState(false);
   const [adminKey, setAdminKey] = useState('');
   const [ov, setOv] = useState({ categoryId: '', brand: '', brandId: '', sku: '', stock: '', weightGrams: '', lengthCm: '', widthCm: '', heightCm: '' });
+  // --- bulk: kirim SEMUA produk ---
+  const [bulkPlan, setBulkPlan] = useState<any>(null);
+  const [bulkMsg, setBulkMsg] = useState('');
+  const [bulkBusy, setBulkBusy] = useState('');
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkAdminKey, setBulkAdminKey] = useState('');
+  const [bulkResults, setBulkResults] = useState<any[]>([]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -148,6 +155,46 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     setActionMsg(`✅ ${data.message} — verifikasi di Seller Center.`);
   };
 
+  const handleBulkPlan = async () => {
+    setBulkBusy('plan'); setBulkMsg(''); setBulkResults([]);
+    const { r, data } = await callJson('/api/lazada/bulk', { action: 'plan' });
+    setBulkBusy('');
+    if (!r.ok) { setBulkMsg(`❌ ${data?.error || 'Gagal menghitung rencana.'}`); return; }
+    setBulkPlan(data);
+    setBulkMsg(
+      `Rencana: ${data.readyCount} produk siap dikirim, ${data.invalidCount} produk perlu diperbaiki. ` +
+      `Dikirim ${data.batchSize} per putaran (butuh ${data.batchesNeeded} putaran). Tidak ada yang dikirim.`
+    );
+  };
+
+  const handleBulkSend = async () => {
+    if (!bulkPlan) { setBulkMsg('❌ Klik "Hitung rencana" dulu supaya Anda melihat jumlah siap vs bermasalah.'); return; }
+    if (!bulkConfirm) { setBulkMsg('❌ Centang pernyataan persetujuan dulu.'); return; }
+    if (!bulkAdminKey.trim()) { setBulkMsg('❌ Masukkan kunci admin (diketik per aksi, tidak disimpan).'); return; }
+    setBulkBusy('send'); setBulkMsg(''); setBulkResults([]);
+    const { r, data } = await callJson('/api/lazada/bulk', {
+      action: 'send', confirm: true, adminKey: bulkAdminKey.trim(),
+    });
+    setBulkBusy('');
+    setBulkAdminKey(''); setBulkConfirm(false);
+    if (!r.ok) {
+      setBulkMsg(`❌ ${data?.error || 'Kirim massal gagal.'} ${data?.detail || ''}`);
+      if (Array.isArray(data?.invalid)) setBulkResults(data.invalid);
+      return;
+    }
+    setBulkResults(data.results || []);
+    setBulkMsg(
+      `✅ Putaran selesai: ${data.sentOk} terkirim, ${data.sentFailed} gagal, ` +
+      `${data.skippedInvalid} dilewati (data belum lengkap). ${data.next || ''}`
+    );
+    handleBulkPlan();
+  };
+
+  const handleDownloadAll = () => {
+    window.open('/api/lazada/export-all', '_blank');
+    setBulkMsg('📄 CSV semua produk diunduh (termasuk yang belum valid, ada kolom status).');
+  };
+
   const selected = products.find((p) => p.id === selectedId);
 
   return (
@@ -156,7 +203,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
         <ArrowLeft size={14} /> Kembali ke menu admin
       </button>
       <h3 className="text-xl font-black mb-1">Sinkronisasi Lazada</h3>
-      <p className="text-xs text-gray-500 mb-4">Satu produk per aksi • Pratinjau dulu • Tanpa tebakan data • Tanpa sinkron massal</p>
+      <p className="text-xs text-gray-500 mb-4">Satu produk per aksi • Pratinjau dulu • Tanpa tebakan data • Bulk hanya produk yang valid + konfirmasi</p>
 
       {loading && <p className="text-sm text-gray-500">Memuat status & produk…</p>}
       {statusErr && <p className="text-sm text-red-600 mb-2">❌ {statusErr}</p>}
@@ -239,6 +286,65 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
           <input type="password" className={inputCls} placeholder="Kunci admin (diketik per aksi)" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} autoComplete="off" />
         </div>
       )}
+
+      <div className="mt-4 rounded-2xl border-2 border-[#0F146D]/30 bg-slate-50 p-3">
+        <p className="text-sm font-black mb-1">4) Kirim SEMUA produk sekaligus (bulk)</p>
+        <p className="text-[11px] text-gray-600 mb-2">
+          Produk yang datanya belum lengkap (SKU/berat/dimensi/stok/kategori/foto) <b>dilewati</b> dan dilaporkan —
+          tidak ditebak. Dikirim bertahap <b>maks 5 produk per putaran</b> dengan jeda aman.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <button onClick={handleBulkPlan} disabled={!!bulkBusy} className="bg-slate-700 text-white text-sm font-bold py-2.5 rounded-xl disabled:opacity-50">
+            {bulkBusy === 'plan' ? 'Menghitung…' : '1. Hitung rencana'}
+          </button>
+          <button onClick={handleDownloadAll} disabled={!!bulkBusy} className="bg-green-700 text-white text-sm font-bold py-2.5 rounded-xl disabled:opacity-50">
+            Unduh CSV semua
+          </button>
+        </div>
+
+        {bulkPlan && (
+          <div className="text-[11px] bg-white border rounded-xl p-2 mb-2">
+            <div className="font-bold mb-1">
+              Total {bulkPlan.total} produk · <span className="text-green-700">siap {bulkPlan.readyCount}</span> ·{' '}
+              <span className="text-red-700">perlu diperbaiki {bulkPlan.invalidCount}</span>
+            </div>
+            {bulkPlan.invalid?.length > 0 && (
+              <div className="max-h-32 overflow-y-auto space-y-1 mt-1">
+                {bulkPlan.invalid.slice(0, 20).map((x: any) => (
+                  <div key={x.id} className="text-red-700">
+                    • <b>{x.name || x.id}</b>: {x.reason}
+                  </div>
+                ))}
+                {bulkPlan.invalid.length > 20 && <div className="text-gray-500">…dan {bulkPlan.invalid.length - 20} lainnya</div>}
+              </div>
+            )}
+          </div>
+        )}
+
+        <label className="flex items-start gap-2 text-xs font-bold text-gray-700 mb-2">
+          <input type="checkbox" checked={bulkConfirm} onChange={(e) => setBulkConfirm(e.target.checked)} className="mt-0.5" />
+          Saya sudah melihat rencana di atas dan MENYETUJUI pengiriman semua produk yang siap ke Lazada (bertahap, maks 5 per putaran).
+        </label>
+        <input type="password" className={inputCls + ' mb-2'} placeholder="Kunci admin (diketik per aksi)"
+          value={bulkAdminKey} onChange={(e) => setBulkAdminKey(e.target.value)} autoComplete="off" />
+        <button onClick={handleBulkSend} disabled={!!bulkBusy || status?.syncBlocked}
+          title={status?.syncBlocked ? 'Terkunci: flag/kredensial/kunci admin belum lengkap' : 'Kirim produk yang siap'}
+          className="w-full bg-[#0F146D] text-white text-sm font-black py-3 rounded-xl disabled:opacity-40">
+          {bulkBusy === 'send' ? 'Mengirim…' : '2. KIRIM semua produk yang siap'}
+        </button>
+
+        {bulkMsg && <p className="text-[11px] font-bold text-gray-800 bg-white border rounded-xl p-2 mt-2">{bulkMsg}</p>}
+        {bulkResults.length > 0 && (
+          <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+            {bulkResults.map((r: any, i: number) => (
+              <div key={i} className={`text-[11px] rounded-lg p-1.5 border ${r.ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                <b>{r.name || r.id}</b> — {r.ok ? 'terkirim' : (r.message || r.reason || 'gagal')}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {actionMsg && <p className="text-xs font-bold text-gray-700 bg-gray-100 rounded-xl p-2.5 mb-3">{actionMsg}</p>}
 

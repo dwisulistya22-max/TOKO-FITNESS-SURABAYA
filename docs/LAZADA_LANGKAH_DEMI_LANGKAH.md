@@ -170,6 +170,28 @@ harus didaftarkan dulu di whitelist baru bisa memberi izin.
 
 ---
 
+## LANGKAH 8 — Kirim SEMUA produk sekaligus (bulk)
+
+Dipakai setelah Langkah 6 (dry-run) lancar.
+
+1. Di Vercel tambahkan dua variabel lalu **Redeploy**:
+   - `LAZADA_ADMIN_KEY` = kata sandi pilihan Anda (diketik ulang setiap aksi)
+   - `LAZADA_SYNC_ENABLED` = `true` (membuka sinkron; boleh dikembalikan ke `false` kapan saja)
+2. Buka panel **Sinkronisasi Lazada** → bagian **4) Kirim SEMUA produk sekaligus (bulk)**.
+3. Klik **1. Hitung rencana**. Muncul jumlah **siap** vs **perlu diperbaiki** (beserta alasannya).
+   Belum ada yang dikirim di tahap ini.
+4. (Opsional) Klik **Unduh CSV semua** untuk melihat semua produk + status validasinya.
+5. Centang persetujuan, ketik **kunci admin**, lalu klik **2. KIRIM semua produk yang siap**.
+
+Aturan yang selalu berlaku:
+
+- Produk yang datanya belum lengkap (SKU, berat, dimensi, stok, kategori Lazada, foto asli) **dilewati** dan
+  dilaporkan — sistem tidak menebak.
+- Maksimal **5 produk per putaran**, dengan jeda aman. Klik tombolnya lagi untuk putaran berikutnya.
+- Produk masuk Lazada sebagai **DRAFT / menunggu review**, bukan langsung tayang.
+
+---
+
 ## Ringkasan singkat
 
 ```

@@ -355,3 +355,122 @@ export function lazadaSignVariants(apiPath, params, appSecret) {
 export function lazadaSign(apiPath, params, appSecret) {
   return lazadaSignVariants(apiPath, params, appSecret)[0].sign;
 }
+
+// ---------------------------------------------------------------------------
+// BULK: kirim SEMUA produk. Aturan keselamatan tetap sama:
+// - hanya produk VALID yang dikirim; yang tidak valid DILEWATI + dilaporkan
+// - maksimal BULK_MAX_IDS_PER_CALL produk per permintaan
+// - ada jeda antar panggilan supaya tidak diblokir Lazada
+// - tanpa konfirmasi eksplisit + kunci admin, tidak ada yang dikirim
+// ---------------------------------------------------------------------------
+export const BULK_MAX_IDS_PER_CALL = 5;
+export const BULK_MAX_TOTAL = 100;
+
+export function delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// Pisahkan produk menjadi siap-kirim dan bermasalah (read-only, tanpa kirim apa pun).
+export function splitValidInvalid(products, overridesById = {}) {
+  const ready = [];
+  const invalid = [];
+  for (const p of products) {
+    const validation = validateProduct(p, overridesById[p.id] || {});
+    if (validation.valid) {
+      ready.push({ id: p.id, name: p.name, sku: validation.merged.sku, validation });
+    } else {
+      invalid.push({
+        id: p.id,
+        name: p.name,
+        errorCount: validation.errors.length,
+        reason: validation.errors.map((e) => `[${e.field}] ${e.message}`).join(' | '),
+      });
+    }
+  }
+  return { ready, invalid };
+}
+
+// Panggil API Lazada (tanda tangan standar Lazada: path + parameter terurut, huruf besar).
+export async function callLazadaApi(env, apiPath, params) {
+  const base = (env.LAZADA_API_BASE || 'https://api.lazada.co.id/rest').replace(/\/$/, '');
+  const full = {
+    app_key: env.LAZADA_APP_KEY,
+    timestamp: String(Date.now()),
+    sign_method: 'sha256',
+    ...params,
+  };
+  if (!full.access_token && env.LAZADA_ACCESS_TOKEN) full.access_token = env.LAZADA_ACCESS_TOKEN;
+  full.sign = lazadaSign(apiPath, full, env.LAZADA_APP_SECRET);
+
+  const r = await fetch(`${base}${apiPath}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(full).toString(),
+  });
+  const text = await r.text();
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { raw: text.slice(0, 500) };
+  }
+  // Lazada: sukses = { code: "0", data: ... }; gagal = { type: "ISV", code, message }.
+  const code = data?.code === undefined || data?.code === null ? '' : String(data.code);
+  const failed =
+    !r.ok ||
+    Boolean(data?.error_response) ||
+    data?.type === 'ISV' ||
+    (code !== '' && code !== '0');
+  return {
+    ok: !failed,
+    httpStatus: r.status,
+    data,
+    message:
+      data?.error_message || data?.errorMessage || data?.message ||
+      data?.error?.message || data?.error || (failed ? `HTTP ${r.status}` : ''),
+  };
+}
+
+// Kirim 1 produk (payload sudah divalidasi) ke Lazada.
+export async function callLazadaCreate(env, payload) {
+  return callLazadaApi(env, '/product/create', { payload: JSON.stringify(payload) });
+}
+
+// ---------------------------------------------------------------------------
+// CSV semua produk (mirip kolom template mass-upload Seller Center).
+// ---------------------------------------------------------------------------
+export const LAZADA_CSV_HEADER = [
+  'sanity_id', 'product_name', 'lazada_category_id', 'sanity_category', 'brand', 'brand_id',
+  'description', 'specs', 'price_idr', 'special_price_idr', 'stock', 'seller_sku',
+  'weight_kg', 'length_cm', 'width_cm', 'height_cm',
+  'image_1', 'image_2', 'image_3', 'image_4',
+  'validation_status', 'validation_notes',
+];
+
+export function buildLazadaCsvRow(p, validation) {
+  const m = validation.merged;
+  const notes = [
+    ...validation.errors.map((e) => `ERROR[${e.field}]: ${e.message}`),
+    ...validation.warnings.map((w) => `WARN[${w.field}]: ${w.message}`),
+  ].join(' | ') || 'OK';
+  const imgs = validation.usableImages.slice(0, 4);
+  while (imgs.length < 4) imgs.push('');
+  const num = (v) => (Number.isFinite(v) ? v : '');
+  return [
+    p.id, m.name, validation.categoryId, p.category || '', m.brand, m.brandId,
+    m.description, m.specs, num(m.price), num(m.discountPrice), num(m.stock), m.sku,
+    Number.isFinite(m.weightGrams) ? m.weightGrams / 1000 : '',
+    num(m.lengthCm), num(m.widthCm), num(m.heightCm),
+    ...imgs,
+    validation.valid ? 'VALID' : 'INVALID',
+    notes,
+  ];
+}
+
+export function buildLazadaCsvAll(entries) {
+  const lines = [LAZADA_CSV_HEADER.join(',')];
+  for (const { product, validation } of entries) {
+    lines.push(buildLazadaCsvRow(product, validation).map(csvCell).join(','));
+  }
+  return '\uFEFF' + lines.join('\n') + '\n';
+}
