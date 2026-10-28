@@ -3,10 +3,8 @@
 // KUNCI GANDA: LAZADA_SYNC_ENABLED=true + kredensial lengkap + adminKey cocok + confirm:true + validasi VALID.
 
 import {
-  fetchSanityProducts, validateProduct, buildLazadaPayload, lazadaEnvStatus, readJsonBody, lazadaSign,
+  fetchSanityProducts, validateProduct, buildLazadaPayload, lazadaEnvStatus, readJsonBody, callLazadaCreate,
 } from '../_lib/lazada.js';
-
-const DEFAULT_API_BASE = 'https://api.lazada.co.id/rest';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -54,29 +52,12 @@ export default async function handler(req, res) {
   const lazadaRequest = { Request: payload.Request };
 
   try {
-    const base = (env.LAZADA_API_BASE || DEFAULT_API_BASE).replace(/\/$/, '');
-    const timestamp = String(Date.now());
-    const params = {
-      app_key: env.LAZADA_APP_KEY,
-      timestamp,
-      sign_method: 'sha256',
-      access_token: env.LAZADA_ACCESS_TOKEN,
-      payload: JSON.stringify(lazadaRequest),
-    };
-    // Standar Lazada: HMAC-SHA256(secret, "/product/create" + parameter terurut), huruf besar.
-    params.sign = lazadaSign('/product/create', params, env.LAZADA_APP_SECRET);
-
-    const r = await fetch(`${base}/product/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(params).toString(),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
+    const out = await callLazadaCreate(env, lazadaRequest);
+    if (!out.ok) {
       return res.status(502).json({
         error: 'Lazada menolak / gagal memproses produk.',
-        lazadaMessage: data?.errorMessage || data?.message || `HTTP ${r.status}`,
-        lazadaDetail: JSON.stringify(data).slice(0, 1000),
+        lazadaMessage: out.message || `HTTP ${out.httpStatus}`,
+        lazadaDetail: JSON.stringify(out.data).slice(0, 1000),
         sentPayload: lazadaRequest,
         note: 'Periksa produk di Seller Center. Jangan ulangi massal tanpa persetujuan.',
       });
@@ -84,7 +65,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       message: `1 produk "${product.name}" terkirim ke Lazada. Verifikasi di Seller Center.`,
-      lazadaResponse: data,
+      lazadaResponse: out.data,
       sentPayload: lazadaRequest,
       validation,
     });

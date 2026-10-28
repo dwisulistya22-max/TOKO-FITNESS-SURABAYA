@@ -1,5 +1,8 @@
 // scripts/lazada-selftest.mjs
-import { normalizeProduct, validateProduct, buildLazadaPayload, buildLazadaCsv, lazadaEnvStatus } from '../api/_lib/lazada.js';
+import {
+  normalizeProduct, validateProduct, buildLazadaPayload, buildLazadaCsv, lazadaEnvStatus,
+  splitValidInvalid, buildLazadaCsvAll, lazadaSignVariants, BULK_MAX_IDS_PER_CALL,
+} from '../api/_lib/lazada.js';
 
 let pass = 0; let fail = 0;
 const check = (name, cond, extra = '') => {
@@ -89,6 +92,39 @@ const s2 = lazadaEnvStatus({
   LAZADA_APP_KEY: 'k', LAZADA_APP_SECRET: 's', LAZADA_ACCESS_TOKEN: 'a', LAZADA_SYNC_ENABLED: 'true',
 });
 check('env lengkap + flag => SYNC_ARMED', s2.mode === 'SYNC_ARMED' && s2.syncBlocked === false);
+
+console.log('\n6) Bulk: pisahkan siap-kirim vs bermasalah (tanpa menebak):');
+const bulkProducts = [
+  complete,
+  normalizeProduct({ ...complete.raw, _id: 'fixture-kurang-sku', sku: '', name: 'Produk Tanpa SKU' }),
+  normalizeProduct({ ...complete.raw, _id: 'fixture-kurang-berat', weightGrams: '', name: 'Produk Tanpa Berat' }),
+];
+const split = splitValidInvalid(bulkProducts);
+check('1 produk siap', split.ready.length === 1, `dapat ${split.ready.length}`);
+check('2 produk bermasalah', split.invalid.length === 2, `dapat ${split.invalid.length}`);
+check('alasan masalah menyebut field', split.invalid.every((x) => x.reason.length > 3));
+check('produk valid memuat sku', split.ready[0]?.sku === 'TF-TRD-X500');
+
+console.log('\n7) Bulk: batas per putaran & CSV semua:');
+check('maks 5 per putaran', BULK_MAX_IDS_PER_CALL === 5);
+const rawComplete = {
+  name: complete.name, price: complete.price, discountPrice: complete.discountPrice,
+  description: complete.description, specs: complete.specs, stock: complete.stock,
+  sku: complete.sku, weightGrams: complete.weightGrams,
+  lengthCm: complete.lengthCm, widthCm: complete.widthCm, heightCm: complete.heightCm,
+  condition: complete.condition, brand: complete.brand, lazadaCategoryId: complete.lazadaCategoryId,
+  category: complete.category,
+  mainImage: complete.images[0], galleryImages: complete.images.slice(1),
+};
+const many = Array.from({ length: 12 }, (_, i) => normalizeProduct({ ...rawComplete, _id: `bulk-${i}`, sku: `SKU-${i}` }));
+check('12 produk valid terdeteksi', splitValidInvalid(many).ready.length === 12);
+const csvAll = buildLazadaCsvAll(many.map((product) => ({ product, validation: validateProduct(product) })));
+check('CSV semua punya header + 12 baris', csvAll.trim().split('\n').length === 13, `dapat ${csvAll.trim().split('\n').length}`);
+
+console.log('\n8) Tanda tangan Lazada (standar: path + parameter urut, HURUF BESAR):');
+const variants = lazadaSignVariants('/product/create', { app_key: '1', timestamp: '2', sign_method: 'sha256' }, 'rahasia');
+check('varian utama huruf besar 64 hex', /^[0-9A-F]{64}$/.test(variants[0].sign));
+check('ada 4 varian dicoba', variants.length === 4);
 
 console.log(`\n== Hasil: ${pass} lolos, ${fail} gagal ==`);
 if (fail > 0) process.exit(1);
