@@ -421,7 +421,10 @@ export function splitValidInvalid(products, overridesById = {}) {
 }
 
 // Panggil API Lazada (tanda tangan standar Lazada: path + parameter terurut, huruf besar).
-export async function callLazadaApi(env, apiPath, params) {
+// Sebagian endpoint Lazada (mis. /category/tree/get) hanya menerima GET.
+// Untuk GET, seluruh parameter dikirim di query string; untuk sisanya lewat body.
+export async function callLazadaApi(env, apiPath, params, options = {}) {
+  const method = String(options.method || 'POST').toUpperCase();
   const base = (env.LAZADA_API_BASE || 'https://api.lazada.co.id/rest').replace(/\/$/, '');
   const full = {
     app_key: env.LAZADA_APP_KEY,
@@ -432,11 +435,17 @@ export async function callLazadaApi(env, apiPath, params) {
   if (!full.access_token && env.LAZADA_ACCESS_TOKEN) full.access_token = env.LAZADA_ACCESS_TOKEN;
   full.sign = lazadaSign(apiPath, full, env.LAZADA_APP_SECRET);
 
-  const r = await fetch(`${base}${apiPath}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(full).toString(),
-  });
+  const queryString = new URLSearchParams(full).toString();
+  const r = await fetch(
+    method === 'GET' ? `${base}${apiPath}?${queryString}` : `${base}${apiPath}`,
+    method === 'GET'
+      ? { method: 'GET', headers: { Accept: 'application/json' } }
+      : {
+        method,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: queryString,
+      },
+  );
   const text = await r.text();
   let data = {};
   try {

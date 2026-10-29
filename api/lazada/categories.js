@@ -50,7 +50,8 @@ export default async function handler(req, res) {
 
   let payload = cache.payload;
   if (!payload || needRefresh || Date.now() - cache.at > 60 * 60 * 1000) {
-    const out = await callLazadaApi(env, '/category/tree/get', { language: 'id' });
+    // Endpoint ini HANYA menerima GET (POST -> UnsupportedHTTPMethod).
+    const out = await callLazadaApi(env, '/category/tree/get', { language: 'id' }, { method: 'GET' });
     if (!out.ok) {
       return res.status(502).json({
         error: 'Lazada menolak permintaan daftar kategori.',
