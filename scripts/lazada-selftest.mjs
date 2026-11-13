@@ -2,6 +2,7 @@
 import {
   normalizeProduct, validateProduct, buildLazadaPayload, buildLazadaCsv, lazadaEnvStatus,
   splitValidInvalid, buildLazadaCsvAll, lazadaSignVariants, BULK_MAX_IDS_PER_CALL,
+  isLazadaImageUrl,
 } from '../api/_lib/lazada.js';
 import { buildBulkOverrides, listSanityCategories } from '../api/_lib/lazada-defaults.js';
 
@@ -12,6 +13,10 @@ const check = (name, cond, extra = '') => {
 };
 
 console.log('== Lazada sync self-test ==\n');
+
+console.log('0) Klasifikasi gambar Lazada:');
+check('CDN Sanity perlu dimigrasikan', isLazadaImageUrl('https://cdn.sanity.io/images/x/y.jpg') === false);
+check('gambar slatic dianggap sudah Lazada', isLazadaImageUrl('https://id-live.slatic.net/p/a.jpg') === true);
 
 const complete = normalizeProduct({
   _id: 'fixture-lengkap-001',

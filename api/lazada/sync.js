@@ -4,12 +4,14 @@
 
 import {
   fetchSanityProducts, validateProduct, buildLazadaPayload, lazadaEnvStatus, readJsonBody, callLazadaCreate,
+  migrateLazadaImages,
 } from '../_lib/lazada.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Gunakan POST.' });
 
   const env = process.env;
@@ -46,7 +48,18 @@ export default async function handler(req, res) {
       validation,
     });
   }
-  const payload = buildLazadaPayload(product, validation);
+  // Lazada menolak gambar dari luar Lazada -> migrasikan dulu ke server Lazada.
+  const migrasi = await migrateLazadaImages(env, validation.usableImages);
+  const gambarLazada = migrasi.filter((m) => m.ok).map((m) => m.url);
+  if (!gambarLazada.length) {
+    return res.status(502).json({
+      error: 'Semua gambar gagal dimigrasikan ke Lazada, jadi produk tidak dikirim.',
+      detail: migrasi.map((m) => `${m.src} -> ${m.message || 'gagal'}`),
+      hint: 'Pastikan gambar JPG/PNG dan ukurannya di bawah 1 MB.',
+    });
+  }
+  const validationFinal = { ...validation, usableImages: gambarLazada };
+  const payload = buildLazadaPayload(product, validationFinal);
 
   // Bungkus payload menjadi format Lazada { Request: { Product: ... } } (sudah ada di payload)
   const lazadaRequest = { Request: payload.Request };
@@ -67,7 +80,9 @@ export default async function handler(req, res) {
       message: `1 produk "${product.name}" terkirim ke Lazada. Verifikasi di Seller Center.`,
       lazadaResponse: out.data,
       sentPayload: lazadaRequest,
-      validation,
+      imagesMigrated: gambarLazada.length,
+      imagesFailed: migrasi.filter((m) => !m.ok).map((m) => ({ src: m.src, message: m.message })),
+      validation: validationFinal,
     });
   } catch (e) {
     return res.status(500).json({ error: `Gagal memanggil Lazada API: ${e?.message || e}` });

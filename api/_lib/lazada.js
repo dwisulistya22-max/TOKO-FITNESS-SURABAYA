@@ -471,6 +471,58 @@ export async function callLazadaApi(env, apiPath, params, options = {}) {
 }
 
 // Kirim 1 produk (payload sudah divalidasi) ke Lazada.
+// ---------------------------------------------------------------------------
+// Gambar: Lazada MENOLAK gambar dari luar Lazada (BIZ_CHECK_EXIST_OUTER_MAIN_IMAGE).
+// Jadi setiap URL Sanity harus dimigrasikan dulu lewat /image/migrate.
+// ---------------------------------------------------------------------------
+const LAZADA_IMAGE_HOSTS = ['lzd.co', 'lazada.com', 'lazada.co.id', 'alicdn.com', 'slatic.net', 'alibaba.com'];
+
+export function isLazadaImageUrl(url) {
+  try {
+    const host = new URL(String(url)).hostname.toLowerCase();
+    return LAZADA_IMAGE_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
+
+// Migrasikan SATU gambar eksternal ke server Lazada. Hasil: { ok, url, message }.
+export async function migrateLazadaImage(env, imageUrl) {
+  const payload = `<?xml version="1.0" encoding="UTF-8" ?><Request><Image><Url>${escapeXml(imageUrl)}</Url></Image></Request>`;
+  const out = await callLazadaApi(env, '/image/migrate', { payload });
+  if (!out.ok) {
+    return { ok: false, message: out.message || 'Lazada menolak migrasi gambar.', code: out.data?.code };
+  }
+  const d = out.data || {};
+  const img = d?.data?.image || d?.image || d?.data?.data?.image || {};
+  const url = img.url || img.Url || '';
+  if (!url) return { ok: false, message: 'Lazada tidak mengembalikan URL gambar hasil migrasi.' };
+  return { ok: true, url, hash: img.hash_code || img.Code || '' };
+}
+
+// Migrasikan beberapa gambar. URL yang sudah milik Lazada dilewati.
+export async function migrateLazadaImages(env, urls = []) {
+  const list = (Array.isArray(urls) ? urls : []).filter(Boolean).slice(0, 8);
+  const results = [];
+  for (const src of list) {
+    if (!/^https?:\/\//i.test(String(src))) {
+      results.push({ src, ok: false, url: '', message: 'URL gambar tidak valid (harus http/https).' });
+      continue;
+    }
+    if (isLazadaImageUrl(src)) {
+      results.push({ src, ok: true, url: src, alreadyLazada: true });
+      continue;
+    }
+    try {
+      const r = await migrateLazadaImage(env, src);
+      results.push({ src, ...r });
+    } catch (e) {
+      results.push({ src, ok: false, url: '', message: `Gagal migrasi: ${e?.message || e}` });
+    }
+  }
+  return results;
+}
+
 export async function callLazadaCreate(env, payload) {
   return callLazadaApi(env, '/product/create', { payload: JSON.stringify(payload) });
 }
