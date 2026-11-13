@@ -23,6 +23,7 @@ import {
   BULK_MAX_IDS_PER_CALL, BULK_MAX_TOTAL,
 } from '../_lib/lazada.js';
 import { buildBulkOverrides, listSanityCategories, normalizeConfig } from '../_lib/lazada-defaults.js';
+import { applyPresetsToConfig } from '../_lib/lazada-presets.js';
 
 const BULK_DELAY_MS = 350;
 
@@ -56,7 +57,7 @@ async function renderPreview(req, res) {
   const env = process.env;
   const status = lazadaEnvStatus(env);
 
-  const cfg = normalizeConfig({
+  let cfg = normalizeConfig({
     brand: q.brand || '',
     brandId: q.brandId || '',
     skuPrefix: q.skuPrefix || '',
@@ -66,6 +67,10 @@ async function renderPreview(req, res) {
     heightCm: q.h || '',
     stock: q.stock || '',
   });
+  // Secara bawaan pakai saran kategori+dimensi yang sama dengan tombol di panel,
+  // supaya angka siap/belum siap mencerminkan keadaan setelah saran diisi.
+  const usePresets = String(q.presets ?? '1') !== '0';
+  if (usePresets) cfg = normalizeConfig(applyPresetsToConfig(cfg));
 
   const { products, error, projectId } = await fetchSanityProducts();
   if (!products.length) {
@@ -78,9 +83,13 @@ async function renderPreview(req, res) {
   const { ready, invalid } = splitValidInvalid(products, bulk.overridesById);
   const cats = listSanityCategories(products);
 
+  // Sumber alasan: field `reason` dari splitValidInvalid (mis. "[brand] Brand kosong ...").
   const reasons = {};
   for (const item of invalid) {
-    for (const e of item.validation?.errors || []) reasons[e.field] = (reasons[e.field] || 0) + 1;
+    for (const part of String(item.reason || '').split(' | ')) {
+      const m = part.match(/^\[([^\]]+)\]/);
+      if (m) reasons[m[1]] = (reasons[m[1]] || 0) + 1;
+    }
   }
 
   const payload = {
@@ -92,13 +101,13 @@ async function renderPreview(req, res) {
     total: products.length,
     ready: ready.length,
     notReady: invalid.length,
+    presetsApplied: usePresets,
     configUsed: cfg,
     categories: cats,
     reasons,
     sample: invalid.slice(0, sampleLimit).map((p) => ({
       name: p.name,
-      category: p.category,
-      errors: (p.validation?.errors || []).map((e) => `${e.field}: ${e.message}`),
+      errors: String(p.reason || '').split(' | ').filter(Boolean),
     })),
     syncEnabled: status.syncEnabled,
     credentialsComplete: status.credentialsComplete,
@@ -106,7 +115,7 @@ async function renderPreview(req, res) {
   if (wantsJson) return res.status(200).json(payload);
 
   const rows = payload.sample
-    .map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td>${p.errors.map((e) => `<code>${esc(e)}</code>`).join('<br>')}</td></tr>`)
+    .map((p) => `<tr><td>${esc(p.name)}</td><td>${p.errors.map((e) => `<code>${esc(e)}</code>`).join('<br>')}</td></tr>`)
     .join('');
   const catTags = cats.map((c) => `<span class="tag">${esc(c.name)} · ${c.count}</span>`).join('');
   const reasonTags = Object.entries(reasons).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="tag">${esc(k)} · ${v} produk</span>`).join('');
@@ -125,9 +134,10 @@ async function renderPreview(req, res) {
       <p style="font-size:13px"><b>Isian cepat yang dipakai:</b> brand <code>${esc(cfg.brand || '-')}</code>,
       awalan SKU <code>${esc(cfg.skuPrefix || '-')}</code>, berat <code>${esc(cfg.weightGrams ?? '-')}</code> g,
       P/L/T <code>${esc(cfg.lengthCm ?? '-')}/${esc(cfg.widthCm ?? '-')}/${esc(cfg.heightCm ?? '-')}</code> cm.</p>
+      <p style="font-size:13px"><b>Saran kategori &amp; dimensi:</b> ${payload.presetsApplied ? 'dipakai (perkiraan, sama dengan tombol "Isi saran")' : 'tidak dipakai'}</p>
       <p style="font-size:13px"><b>Jenis produk:</b><br>${catTags || '-'}</p>
       <p style="font-size:13px"><b>Alasan belum siap:</b><br>${reasonTags || 'tidak ada'}</p>
-      <table><thead><tr><th>Produk</th><th>Jenis</th><th>Kendala</th></tr></thead><tbody>${rows || '<tr><td colspan="3">Semua produk siap.</td></tr>'}</tbody></table>`,
+      <table><thead><tr><th>Produk</th><th>Kendala</th></tr></thead><tbody>${rows || '<tr><td colspan="2">Semua produk siap.</td></tr>'}</tbody></table>`,
     note: `Ubah isian lewat alamat, contoh <code>?brand=No%20Brand&skuPrefix=TFS-&weight=80000&l=190&w=85&h=40</code>.
       Tambahkan <code>&json=1</code> untuk data mentah. Sync Lazada ${status.syncEnabled ? 'AKTIF' : 'tetap terkunci (LAZADA_SYNC_ENABLED belum diisi)'}.`,
   }));
