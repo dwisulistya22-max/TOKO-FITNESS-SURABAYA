@@ -200,7 +200,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const loadAllCategories = async (force = false) => {
     setCatBusy('all'); setCatMsg('');
     try {
-      const r = await fetch(`/api/lazada/categories?leaf=1${force ? '&refresh=1' : ''}`, { cache: 'no-store' });
+      const r = await fetch(`/api/lazada/categories?leaf=1&limit=3500${force ? '&refresh=1' : ''}`, { cache: 'no-store' });
       const data = await r.json();
       if (!r.ok) {
         setCatMsg(`❌ ${data?.error || 'Gagal memuat kategori'} ${data?.lazadaMessage || data?.detail || ''}`);
