@@ -42,6 +42,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const [actionMsg, setActionMsg] = useState('');
   const [confirmSync, setConfirmSync] = useState(false);
   const [adminKey, setAdminKey] = useState('');
+  const [ovMsg, setOvMsg] = useState('');
   const [ov, setOv] = useState({ categoryId: '', brand: '', brandId: '', sku: '', stock: '', weightGrams: '', lengthCm: '', widthCm: '', heightCm: '' });
   // --- bulk: kirim SEMUA produk ---
   const [bulkPlan, setBulkPlan] = useState<any>(null);
@@ -88,6 +89,32 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
       if (raw) setCfg(JSON.parse(raw));
     } catch { /* abaikan */ }
   }, []);
+
+  // Isi kolom override (bagian 2) dari "Isi cepat massal" milik admin sendiri.
+  // Hanya mengisi kolom yang masih kosong; angka SKU memakai urutan yang sama dengan bulk.
+  const fillOverridesFromCfg = () => {
+    const p = products.find((x) => x.id === selectedId);
+    if (!p) { setOvMsg('Pilih produk dulu.'); return; }
+    const catKey = p.category || '';
+    const per = (cfg.perCategory || {})[catKey] || {};
+    const pick = (a: any, b: any) => (String(a ?? '').trim() !== '' ? a : (String(b ?? '').trim() !== '' ? b : ''));
+    const ordered = [...products].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    const idx = ordered.findIndex((x) => x.id === p.id);
+    const pad = Math.min(Number(cfg.skuPad) || 4, 8);
+    const autoSku = cfg.skuPrefix ? `${cfg.skuPrefix}${String((Number(cfg.skuStart) || 1) + Math.max(idx, 0)).padStart(pad, '0')}` : '';
+    setOv((prev) => ({
+      categoryId: String(prev.categoryId || '').trim() || String(cfg.categoryMap?.[catKey] || ''),
+      brand: String(prev.brand || '').trim() || String(cfg.brand || ''),
+      brandId: String(prev.brandId || '').trim() || String(cfg.brandId || ''),
+      sku: String(prev.sku || '').trim() || autoSku,
+      stock: String(prev.stock || '').trim() || String(cfg.stock ?? ''),
+      weightGrams: String(prev.weightGrams || '').trim() || String(pick(per.weightGrams, cfg.weightGrams)),
+      lengthCm: String(prev.lengthCm || '').trim() || String(pick(per.lengthCm, cfg.lengthCm)),
+      widthCm: String(prev.widthCm || '').trim() || String(pick(per.widthCm, cfg.widthCm)),
+      heightCm: String(prev.heightCm || '').trim() || String(pick(per.heightCm, cfg.heightCm)),
+    }));
+    setOvMsg('Kolom diisi dari isi cepat massal. Periksa dulu, lalu klik Validasi.');
+  };
 
   const buildOverrides = () => {
     const o: Record<string, any> = {};
@@ -403,6 +430,10 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
         <input className={inputCls} placeholder="L (cm)" inputMode="numeric" value={ov.widthCm} onChange={(e) => setOv({ ...ov, widthCm: e.target.value })} />
         <input className={inputCls} placeholder="T (cm)" inputMode="numeric" value={ov.heightCm} onChange={(e) => setOv({ ...ov, heightCm: e.target.value })} />
       </div>
+      <button onClick={fillOverridesFromCfg} disabled={!selectedId} className="w-full mb-3 bg-white border border-slate-300 text-slate-800 text-[11px] font-bold py-2 rounded-xl disabled:opacity-40">
+        Ambil dari isi cepat massal (kategori, brand, SKU, berat, ukuran, stok)
+      </button>
+      {ovMsg && <p className="text-[10px] font-bold text-blue-800 -mt-2 mb-2">{ovMsg}</p>}
 
       <label className={labelCls}>3) Validasi → dry-run → ekspor / sinkron</label>
       <div className="grid grid-cols-2 gap-2 mb-3">
