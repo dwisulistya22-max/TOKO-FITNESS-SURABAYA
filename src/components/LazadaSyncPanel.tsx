@@ -90,31 +90,57 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     } catch { /* abaikan */ }
   }, []);
 
-  // Isi kolom override (bagian 2) dari "Isi cepat massal" milik admin sendiri.
-  // Hanya mengisi kolom yang masih kosong; angka SKU memakai urutan yang sama dengan bulk.
+  // Simpan otomatis: isian cepat tidak hilang saat halaman dimuat ulang.
+  useEffect(() => {
+    try { localStorage.setItem('lazada-bulk-config-v1', JSON.stringify(cfg)); } catch { /* abaikan */ }
+  }, [cfg]);
+
+  // Hitung isi kolom untuk satu produk: isian cepat admin -> saran per jenis -> data Sanity.
+  // Semua nilai tetap ditampilkan di kotak, jadi admin bisa memeriksa & mengubah sebelum kirim.
+  const computeOverrides = (p: any) => {
+    const catKey = p?.category || '';
+    const per = (cfg.perCategory || {})[catKey] || {};
+    const preset = presetFor(catKey);
+    const pick = (...vals: any[]) => {
+      for (const v of vals) if (String(v ?? '').trim() !== '') return String(v).trim();
+      return '';
+    };
+    const ordered = [...products].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    const idx = ordered.findIndex((x) => x.id === p?.id);
+    const pad = Math.min(Number(cfg.skuPad) || 4, 8);
+    const autoSku = cfg.skuPrefix
+      ? `${cfg.skuPrefix}${String((Number(cfg.skuStart) || 1) + Math.max(idx, 0)).padStart(pad, '0')}`
+      : '';
+    return {
+      categoryId: pick(cfg.categoryMap?.[catKey], preset?.categoryId),
+      brand: pick(cfg.brand),
+      brandId: pick(cfg.brandId),
+      sku: pick(autoSku),
+      stock: pick(cfg.stock, p?.stock),
+      weightGrams: pick(per.weightGrams, cfg.weightGrams, preset?.weightGrams),
+      lengthCm: pick(per.lengthCm, cfg.lengthCm, preset?.lengthCm),
+      widthCm: pick(per.widthCm, cfg.widthCm, preset?.widthCm),
+      heightCm: pick(per.heightCm, cfg.heightCm, preset?.heightCm),
+    };
+  };
+
+  // Isi ulang kolom (menimpa) dengan nilai terbaru dari isian cepat + saran.
   const fillOverridesFromCfg = () => {
     const p = products.find((x) => x.id === selectedId);
     if (!p) { setOvMsg('Pilih produk dulu.'); return; }
-    const catKey = p.category || '';
-    const per = (cfg.perCategory || {})[catKey] || {};
-    const pick = (a: any, b: any) => (String(a ?? '').trim() !== '' ? a : (String(b ?? '').trim() !== '' ? b : ''));
-    const ordered = [...products].sort((a, b) => String(a.id).localeCompare(String(b.id)));
-    const idx = ordered.findIndex((x) => x.id === p.id);
-    const pad = Math.min(Number(cfg.skuPad) || 4, 8);
-    const autoSku = cfg.skuPrefix ? `${cfg.skuPrefix}${String((Number(cfg.skuStart) || 1) + Math.max(idx, 0)).padStart(pad, '0')}` : '';
-    setOv((prev) => ({
-      categoryId: String(prev.categoryId || '').trim() || String(cfg.categoryMap?.[catKey] || ''),
-      brand: String(prev.brand || '').trim() || String(cfg.brand || ''),
-      brandId: String(prev.brandId || '').trim() || String(cfg.brandId || ''),
-      sku: String(prev.sku || '').trim() || autoSku,
-      stock: String(prev.stock || '').trim() || String(cfg.stock ?? ''),
-      weightGrams: String(prev.weightGrams || '').trim() || String(pick(per.weightGrams, cfg.weightGrams)),
-      lengthCm: String(prev.lengthCm || '').trim() || String(pick(per.lengthCm, cfg.lengthCm)),
-      widthCm: String(prev.widthCm || '').trim() || String(pick(per.widthCm, cfg.widthCm)),
-      heightCm: String(prev.heightCm || '').trim() || String(pick(per.heightCm, cfg.heightCm)),
-    }));
-    setOvMsg('Kolom diisi dari isi cepat massal. Periksa dulu, lalu klik Validasi.');
+    setOv(computeOverrides(p));
+    setOvMsg('Kolom diisi dari isian cepat + saran per jenis. Periksa dulu, lalu klik Validasi.');
   };
+
+  // Saat produk dipilih, kolom langsung terisi otomatis supaya tidak perlu mengetik manual.
+  useEffect(() => {
+    if (!selectedId) return;
+    const p = products.find((x) => x.id === selectedId);
+    if (!p) return;
+    setOv(computeOverrides(p));
+    setOvMsg('Kolom terisi otomatis (isian cepat + saran). Periksa, lalu klik Validasi.');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, products.length]);
 
   const buildOverrides = () => {
     const o: Record<string, any> = {};
@@ -418,20 +444,52 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      <label className={labelCls}>2) Overrides eksplisit (opsional, per aksi)</label>
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <input className={inputCls} placeholder="Lazada category_id" value={ov.categoryId} onChange={(e) => setOv({ ...ov, categoryId: e.target.value })} />
-        <input className={inputCls} placeholder="Brand (mis. No Brand)" value={ov.brand} onChange={(e) => setOv({ ...ov, brand: e.target.value })} />
-        <input className={inputCls} placeholder="Brand ID (opsional)" value={ov.brandId} onChange={(e) => setOv({ ...ov, brandId: e.target.value })} />
-        <input className={inputCls} placeholder="SKU" value={ov.sku} onChange={(e) => setOv({ ...ov, sku: e.target.value })} />
-        <input className={inputCls} placeholder="Stok" inputMode="numeric" value={ov.stock} onChange={(e) => setOv({ ...ov, stock: e.target.value })} />
-        <input className={inputCls} placeholder="Berat (gram)" inputMode="numeric" value={ov.weightGrams} onChange={(e) => setOv({ ...ov, weightGrams: e.target.value })} />
-        <input className={inputCls} placeholder="P (cm)" inputMode="numeric" value={ov.lengthCm} onChange={(e) => setOv({ ...ov, lengthCm: e.target.value })} />
-        <input className={inputCls} placeholder="L (cm)" inputMode="numeric" value={ov.widthCm} onChange={(e) => setOv({ ...ov, widthCm: e.target.value })} />
-        <input className={inputCls} placeholder="T (cm)" inputMode="numeric" value={ov.heightCm} onChange={(e) => setOv({ ...ov, heightCm: e.target.value })} />
+      <label className={labelCls}>2) Nilai yang akan dikirim (terisi otomatis, boleh diubah)</label>
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Kategori Lazada (category_id)</label>
+          <input className={inputCls} placeholder="angka, mis. 15445" value={ov.categoryId} onChange={(e) => setOv({ ...ov, categoryId: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Brand (nama)</label>
+          <input className={inputCls} placeholder="mis. No Brand" value={ov.brand} onChange={(e) => setOv({ ...ov, brand: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Brand ID</label>
+          <input className={inputCls} placeholder="kosongkan bila pakai nama" value={ov.brandId} onChange={(e) => setOv({ ...ov, brandId: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">SKU (SellerSku)</label>
+          <input className={inputCls} placeholder="mis. TFS-0001" value={ov.sku} onChange={(e) => setOv({ ...ov, sku: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Stok</label>
+          <input className={inputCls} placeholder="angka" inputMode="numeric" value={ov.stock} onChange={(e) => setOv({ ...ov, stock: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Berat paket (gram)</label>
+          <input className={inputCls} placeholder="angka" inputMode="numeric" value={ov.weightGrams} onChange={(e) => setOv({ ...ov, weightGrams: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Panjang (cm)</label>
+          <input className={inputCls} placeholder="angka" inputMode="numeric" value={ov.lengthCm} onChange={(e) => setOv({ ...ov, lengthCm: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Lebar (cm)</label>
+          <input className={inputCls} placeholder="angka" inputMode="numeric" value={ov.widthCm} onChange={(e) => setOv({ ...ov, widthCm: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Tinggi (cm)</label>
+          <input className={inputCls} placeholder="angka" inputMode="numeric" value={ov.heightCm} onChange={(e) => setOv({ ...ov, heightCm: e.target.value })} />
+        </div>
       </div>
+      {!String(ov.brand || '').trim() && !String(ov.brandId || '').trim() && (
+        <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-2">
+          Brand masih kosong. Isi <b>Brand</b> sekali di bagian &ldquo;Isi cepat massal&rdquo; (mis. No Brand) agar semua produk terisi.
+        </p>
+      )}
       <button onClick={fillOverridesFromCfg} disabled={!selectedId} className="w-full mb-3 bg-white border border-slate-300 text-slate-800 text-[11px] font-bold py-2 rounded-xl disabled:opacity-40">
-        Ambil dari isi cepat massal (kategori, brand, SKU, berat, ukuran, stok)
+        Isi ulang kolom dari isian cepat + saran
       </button>
       {ovMsg && <p className="text-[10px] font-bold text-blue-800 -mt-2 mb-2">{ovMsg}</p>}
 
