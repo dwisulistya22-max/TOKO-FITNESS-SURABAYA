@@ -111,10 +111,17 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     const autoSku = cfg.skuPrefix
       ? `${cfg.skuPrefix}${String((Number(cfg.skuStart) || 1) + Math.max(idx, 0)).padStart(pad, '0')}`
       : '';
+    // Kalau admin mengetik nama brand di kotak Brand ID, pindahkan ke Brand.
+    const rawBrand = pick(cfg.brand);
+    const rawBrandId = pick(cfg.brandId);
+    const brandIdIsNumeric = /^\d+$/.test(rawBrandId);
+    const brand = rawBrand || (rawBrandId && !brandIdIsNumeric ? rawBrandId : '');
+    const brandId = brandIdIsNumeric ? rawBrandId : '';
+
     return {
       categoryId: pick(cfg.categoryMap?.[catKey], preset?.categoryId),
-      brand: pick(cfg.brand),
-      brandId: pick(cfg.brandId),
+      brand,
+      brandId,
       sku: pick(autoSku),
       stock: pick(cfg.stock, p?.stock),
       weightGrams: pick(per.weightGrams, cfg.weightGrams, preset?.weightGrams),
@@ -483,6 +490,11 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
           <input className={inputCls} placeholder="angka" inputMode="numeric" value={ov.heightCm} onChange={(e) => setOv({ ...ov, heightCm: e.target.value })} />
         </div>
       </div>
+      {!String(ov.sku || '').trim() && (
+        <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-2">
+          SKU masih kosong. Isi <b>Awalan SKU</b> (mis. TFS-) di bagian &ldquo;Isi cepat massal&rdquo; agar SKU terisi sendiri.
+        </p>
+      )}
       {!String(ov.brand || '').trim() && !String(ov.brandId || '').trim() && (
         <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-2">
           Brand masih kosong. Isi <b>Brand</b> sekali di bagian &ldquo;Isi cepat massal&rdquo; (mis. No Brand) agar semua produk terisi.
@@ -565,14 +577,42 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
             Dipakai hanya untuk kolom yang Anda isi. SKU otomatis hanya mengisi produk yang SKU-nya kosong.
           </p>
           <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-            <input className={inputCls} placeholder="Brand (mis. No Brand)" value={cfg.brand || ''} onChange={(e) => setCfg({ ...cfg, brand: e.target.value })} />
-            <input className={inputCls} placeholder="Awalan SKU (mis. TFS-)" value={cfg.skuPrefix || ''} onChange={(e) => setCfg({ ...cfg, skuPrefix: e.target.value })} />
-            <input className={inputCls} placeholder="Berat umum (gram)" inputMode="numeric" value={cfg.weightGrams ?? ''} onChange={(e) => setCfg({ ...cfg, weightGrams: e.target.value })} />
-            <input className={inputCls} placeholder="Stok (kosongkan = pakai Sanity)" inputMode="numeric" value={cfg.stock ?? ''} onChange={(e) => setCfg({ ...cfg, stock: e.target.value })} />
-            <input className={inputCls} placeholder="P umum (cm)" inputMode="numeric" value={cfg.lengthCm ?? ''} onChange={(e) => setCfg({ ...cfg, lengthCm: e.target.value })} />
-            <input className={inputCls} placeholder="L umum (cm)" inputMode="numeric" value={cfg.widthCm ?? ''} onChange={(e) => setCfg({ ...cfg, widthCm: e.target.value })} />
-            <input className={inputCls} placeholder="T umum (cm)" inputMode="numeric" value={cfg.heightCm ?? ''} onChange={(e) => setCfg({ ...cfg, heightCm: e.target.value })} />
-            <input className={inputCls} placeholder="Mulai nomor SKU" inputMode="numeric" value={cfg.skuStart ?? 1} onChange={(e) => setCfg({ ...cfg, skuStart: e.target.value })} />
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Brand (nama)</label>
+              <input className={inputCls} placeholder="mis. No Brand" value={cfg.brand ?? ''} onChange={(e) => setCfg({ ...cfg, brand: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Awalan SKU</label>
+              <input className={inputCls} placeholder="mis. TFS-" value={cfg.skuPrefix ?? ''} onChange={(e) => setCfg({ ...cfg, skuPrefix: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Brand ID</label>
+              <input className={inputCls} placeholder="kosongkan bila pakai nama" value={cfg.brandId ?? ''} onChange={(e) => setCfg({ ...cfg, brandId: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Stok umum</label>
+              <input className={inputCls} placeholder="kosongkan = pakai Sanity" inputMode="numeric" value={cfg.stock ?? ''} onChange={(e) => setCfg({ ...cfg, stock: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Berat umum (gram)</label>
+              <input className={inputCls} placeholder="angka" inputMode="numeric" value={cfg.weightGrams ?? ''} onChange={(e) => setCfg({ ...cfg, weightGrams: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Panjang umum (cm)</label>
+              <input className={inputCls} placeholder="angka" inputMode="numeric" value={cfg.lengthCm ?? ''} onChange={(e) => setCfg({ ...cfg, lengthCm: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Lebar umum (cm)</label>
+              <input className={inputCls} placeholder="angka" inputMode="numeric" value={cfg.widthCm ?? ''} onChange={(e) => setCfg({ ...cfg, widthCm: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Tinggi umum (cm)</label>
+              <input className={inputCls} placeholder="angka" inputMode="numeric" value={cfg.heightCm ?? ''} onChange={(e) => setCfg({ ...cfg, heightCm: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Mulai nomor SKU</label>
+              <input className={inputCls} placeholder="mis. 1" inputMode="numeric" value={cfg.skuStart ?? ''} onChange={(e) => setCfg({ ...cfg, skuStart: e.target.value })} />
+            </div>
           </div>
           <div className="flex gap-1.5">
             <button onClick={saveCfg} className="flex-1 bg-white border text-[11px] font-bold py-1.5 rounded-lg">Simpan profil</button>
