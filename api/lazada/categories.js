@@ -5,6 +5,7 @@
 //   ?q=treadmill   -> saring nama kategori
 //   ?leaf=1        -> hanya kategori daun (yang boleh dipakai jual produk)
 //   ?refresh=1     -> abaikan cache 1 jam di server
+//   ?limit=3500    -> kirim sampai 3.500 kategori (default 500, maks 3.500)
 //
 // Butuh App Key + App Secret + Access Token. Kalau token kedaluwarsa, jalankan
 // ulang proses otorisasi di /api/lazada/auth.
@@ -47,6 +48,8 @@ export default async function handler(req, res) {
   const onlyLeaf = String(q.leaf || '') === '1';
   const needRefresh = String(q.refresh || '') === '1';
   const keyword = String(q.q || '').trim().toLowerCase();
+  const limitRaw = Number(q.limit);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 3500) : 500;
 
   let payload = cache.payload;
   if (!payload || needRefresh || Date.now() - cache.at > 60 * 60 * 1000) {
@@ -75,6 +78,7 @@ export default async function handler(req, res) {
     fetchedAt: new Date(cache.at).toISOString(),
     total: payload.total,
     shown: categories.length,
-    categories: categories.slice(0, 500),
+    limit,
+    categories: categories.slice(0, limit),
   });
 }
