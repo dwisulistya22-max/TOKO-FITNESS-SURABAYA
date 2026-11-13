@@ -20,7 +20,7 @@
 import {
   fetchSanityProducts, validateProduct, buildLazadaPayload, splitValidInvalid,
   lazadaEnvStatus, readJsonBody, callLazadaCreate, delay,
-  BULK_MAX_IDS_PER_CALL, BULK_MAX_TOTAL,
+  BULK_MAX_IDS_PER_CALL, BULK_MAX_TOTAL, migrateLazadaImages,
 } from '../_lib/lazada.js';
 import { buildBulkOverrides, listSanityCategories, normalizeConfig } from '../_lib/lazada-defaults.js';
 import { applyPresetsToConfig } from '../_lib/lazada-presets.js';
@@ -251,7 +251,21 @@ export default async function handler(req, res) {
     const product = pool.find((p) => p.id === item.id);
     try {
       const validation = validateProduct(product, overridesById[item.id] || {});
-      const payload = buildLazadaPayload(product, validation);
+      // Gambar luar Lazada ditolak; migrasikan dulu.
+      const migrasi = await migrateLazadaImages(env, validation.usableImages);
+      const gambarLazada = migrasi.filter((m) => m.ok).map((m) => m.url);
+      if (!gambarLazada.length) {
+        results.push({
+          id: item.id,
+          name: item.name,
+          ok: false,
+          message: 'Gambar gagal dimigrasikan ke Lazada, produk dilewati.',
+          lazadaDetail: migrasi.map((m) => `${m.src} -> ${m.message || 'gagal'}`).join(' | ').slice(0, 400),
+        });
+        if (i < batch.length - 1) await delay(BULK_DELAY_MS);
+        continue;
+      }
+      const payload = buildLazadaPayload(product, { ...validation, usableImages: gambarLazada });
       const out = await callLazadaCreate(env, { Request: payload.Request });
       results.push({
         id: item.id,
