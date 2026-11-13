@@ -70,7 +70,7 @@ async function renderPreview(req, res) {
   // Secara bawaan pakai saran kategori+dimensi yang sama dengan tombol di panel,
   // supaya angka siap/belum siap mencerminkan keadaan setelah saran diisi.
   const usePresets = String(q.presets ?? '1') !== '0';
-  if (usePresets) cfg = normalizeConfig(applyPresetsToConfig(cfg));
+  // (nama kategori Sanity dipakai setelah produk dibaca, lihat di bawah)
 
   const { products, error, projectId } = await fetchSanityProducts();
   if (!products.length) {
@@ -79,6 +79,10 @@ async function renderPreview(req, res) {
     return res.status(502).send(htmlPage({ title: 'Gagal membaca Sanity', body: `<h1>Gagal membaca Sanity</h1><p class="sub">${esc(error || '')}</p>` }));
   }
 
+  if (usePresets) {
+    const sanityNames = [...new Set(products.map((p) => p.category).filter(Boolean))];
+    cfg = normalizeConfig(applyPresetsToConfig(cfg, sanityNames));
+  }
   const bulk = buildBulkOverrides(products, cfg);
   const { ready, invalid } = splitValidInvalid(products, bulk.overridesById);
   const cats = listSanityCategories(products);

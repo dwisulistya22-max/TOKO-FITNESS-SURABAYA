@@ -9,7 +9,7 @@
 export const LAZADA_CATEGORY_PRESETS = [
   { sanity: 'Treadmill & Walking Pad', categoryId: '5314', weightGrams: 80000, lengthCm: 190, widthCm: 85, heightCm: 40 },
   { sanity: 'Sepeda Statis & Crosstrainer', categoryId: '5316', weightGrams: 45000, lengthCm: 120, widthCm: 60, heightCm: 30 },
-  { sanity: 'Dumbbell & Weight Plate', categoryId: '15448', weightGrams: 25000, lengthCm: 40, widthCm: 30, heightCm: 25 },
+  { sanity: 'Dumbell & Weight Plate', categoryId: '15448', weightGrams: 25000, lengthCm: 40, widthCm: 30, heightCm: 25 },
   { sanity: 'Home Gym & Bench Press', categoryId: '15424', weightGrams: 60000, lengthCm: 170, widthCm: 60, heightCm: 40 },
   { sanity: 'Commercial Fitness', categoryId: '62473003', weightGrams: 120000, lengthCm: 150, widthCm: 110, heightCm: 100 },
   { sanity: 'Fitness Outdoor', categoryId: '62473003', weightGrams: 40000, lengthCm: 120, widthCm: 60, heightCm: 40 },
@@ -18,14 +18,20 @@ export const LAZADA_CATEGORY_PRESETS = [
   { sanity: 'Stick & Accessories', categoryId: '15445', weightGrams: 8000, lengthCm: 190, widthCm: 15, heightCm: 15 },
 ];
 
+const norm = (v) => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
 // Gabungkan saran ke konfigurasi tanpa menimpa isian yang sudah ada.
-export function applyPresetsToConfig(cfg) {
+// Nama kategori dicocokkan tanpa peduli huruf besar/kecil & spasi ganda.
+export function applyPresetsToConfig(cfg, sanityCategoryNames = null) {
   const categoryMap = { ...(cfg.categoryMap || {}) };
   const perCategory = { ...(cfg.perCategory || {}) };
   for (const p of LAZADA_CATEGORY_PRESETS) {
-    if (!categoryMap[p.sanity]) categoryMap[p.sanity] = p.categoryId;
-    const cur = perCategory[p.sanity] || {};
-    perCategory[p.sanity] = {
+    // Kalau daftar kategori Sanity diberikan, pakai ejaan aslinya (mis. "Dumbell").
+    const alias = (sanityCategoryNames || []).find((n) => norm(n) === norm(p.sanity));
+    const key = alias || p.sanity;
+    if (!categoryMap[key]) categoryMap[key] = p.categoryId;
+    const cur = perCategory[key] || {};
+    perCategory[key] = {
       ...cur,
       weightGrams: cur.weightGrams ?? p.weightGrams,
       lengthCm: cur.lengthCm ?? p.lengthCm,

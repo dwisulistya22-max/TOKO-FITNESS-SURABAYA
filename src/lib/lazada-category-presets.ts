@@ -36,7 +36,7 @@ export const LAZADA_CATEGORY_PRESETS: LazadaCategoryPreset[] = [
     reason: 'Sepeda statis / crosstrainer masuk kelompok cardio exercise bikes. Perkiraan paket sepeda rumah.',
   },
   {
-    sanity: 'Dumbbell & Weight Plate',
+    sanity: 'Dumbell & Weight Plate',
     weightGrams: 25000, lengthCm: 40, widthCm: 30, heightCm: 25,
     categoryId: '15448',
     path: 'Sports & Outdoors Activities Equipment › Exercise & Fitness Equipment › Strength Training Equipment & Machines › Free Weight › Weight › Dumbbells',
@@ -86,7 +86,9 @@ export const LAZADA_CATEGORY_PRESETS: LazadaCategoryPreset[] = [
   },
 ];
 
+const norm = (v: string) => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
 export function presetFor(sanityName: string): LazadaCategoryPreset | undefined {
-  const key = String(sanityName || '').trim().toLowerCase();
-  return LAZADA_CATEGORY_PRESETS.find((p) => p.sanity.trim().toLowerCase() === key);
+  const key = norm(sanityName);
+  return LAZADA_CATEGORY_PRESETS.find((p) => norm(p.sanity) === key);
 }
