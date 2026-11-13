@@ -237,6 +237,34 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     }));
   };
 
+  // Isi berat/ukuran dari perkiraan per jenis produk (hanya yang masih kosong).
+  const applyDimensionPresets = () => {
+    let filled = 0;
+    let skipped = 0;
+    setCfg((prev: any) => {
+      const nextPer = { ...(prev.perCategory || {}) };
+      for (const sc of sanityCats) {
+        const p = presetFor(sc.name);
+        if (!p) continue;
+        const cur = nextPer[sc.name] || {};
+        const hasAll = ['weightGrams', 'lengthCm', 'widthCm', 'heightCm'].every(
+          (k) => String(cur[k] ?? '').trim() !== ''
+        );
+        if (hasAll) { skipped += 1; continue; }
+        nextPer[sc.name] = {
+          ...cur,
+          weightGrams: String(cur.weightGrams ?? '').trim() || String(p.weightGrams),
+          lengthCm: String(cur.lengthCm ?? '').trim() || String(p.lengthCm),
+          widthCm: String(cur.widthCm ?? '').trim() || String(p.widthCm),
+          heightCm: String(cur.heightCm ?? '').trim() || String(p.heightCm),
+        };
+        filled += 1;
+      }
+      return { ...prev, perCategory: nextPer };
+    });
+    setCatMsg(`✅ Berat & ukuran PERKIRAAN diisi untuk ${filled} jenis produk${skipped ? `, ${skipped} dilewati karena sudah lengkap` : ''}. Ini bukan hasil timbangan — ubah angkanya bila perlu, lalu klik "1. Hitung rencana".`);
+  };
+
   // Isi peta kategori dari saran yang sudah dicek terhadap GetCategoryTree + nama produk Sanity.
   // Hanya mengisi yang masih kosong supaya isian manual admin tidak tertimpa.
   const applyCategoryPresets = () => {
@@ -474,7 +502,10 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
               <Sparkles className="w-3 h-3" /> Isi saran
             </button>
           </div>
-          {catMsg && <p className="text-[10px] font-bold text-purple-800 mb-1">{catMsg}</p>}
+          <button onClick={applyDimensionPresets} disabled={sanityCats.length === 0} title={sanityCats.length === 0 ? 'Klik "1. Hitung rencana" dulu' : 'Isi berat & ukuran PERKIRAAN per jenis produk; bisa diubah'} className="w-full mt-1 bg-white border border-purple-400 text-purple-800 text-[11px] font-bold py-2 rounded-xl disabled:opacity-40 flex items-center justify-center gap-1">
+            <Sparkles className="w-3 h-3" /> Isi berat &amp; ukuran perkiraan
+          </button>
+          {catMsg && <p className="text-[10px] font-bold text-purple-800 mb-1 mt-1">{catMsg}</p>}
           {catList.length > 0 && (
             <div className="max-h-28 overflow-y-auto bg-white border rounded-lg p-1 mb-2 space-y-0.5">
               {catList.map((c: any) => (
