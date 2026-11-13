@@ -233,3 +233,27 @@ Langkah 7   : Kirim 1 produk sungguhan (nanti, kalau siap)
 ```
 
 Masing-masing langkah selesai satu per satu, lalu kabari saya.
+
+---
+
+## LANGKAH 10 — Memperbarui Access Token tanpa otorisasi ulang
+
+Access Token Lazada berlaku ±7 hari, Refresh Token ±30 hari.
+
+1. Buka `https://www.tokofitnesssurabaya.com/api/lazada/refresh` di browser.
+2. Halaman menampilkan **LAZADA_ACCESS_TOKEN** baru (dan **LAZADA_REFRESH_TOKEN** baru bila Lazada menerbitkannya).
+3. Salin ke Notepad, tempel ke Vercel → **Settings → Environment Variables**, lalu **Redeploy**.
+4. Cek `https://www.tokofitnesssurabaya.com/api/lazada/categories?leaf=1` → harus muncul `{"ok":true,...}`.
+
+Kalau Refresh Token sudah lewat 30 hari, harus otorisasi ulang di `/api/lazada/auth?code=…`.
+
+## LANGKAH 11 — Mengisi peta kategori dengan tombol "Isi saran"
+
+1. Klik **1. Hitung rencana** supaya daftar 9 jenis produk Sanity muncul.
+2. Klik **Isi saran** → kategori Lazada terisi otomatis (hanya yang masih kosong).
+3. Periksa hasilnya di tiap kotak; boleh diubah manual.
+4. Isi berat/ukuran per jenis (wajib, tidak ditebak sistem).
+5. Klik **1. Hitung rencana** lagi → lihat mana yang *siap* dan mana yang *belum* beserta alasannya.
+
+Daftar saran tersimpan di `src/lib/lazada-category-presets.ts`; ID-nya berasal dari
+GetCategoryTree Lazada dan dicocokkan dengan nama produk asli di Sanity.
