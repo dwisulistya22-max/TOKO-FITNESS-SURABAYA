@@ -248,6 +248,10 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
       setQuickMsg(`❌ ${data?.error || 'Gagal mengirim.'} ${data?.detail || data?.message || ''}${data?.lazadaDetail ? ` — ${String(data.lazadaDetail).slice(0, 200)}` : ''}`);
       return;
     }
+    try {
+      const sent = JSON.parse(localStorage.getItem('lazada-bulk-sent-ids-v1') || '[]');
+      localStorage.setItem('lazada-bulk-sent-ids-v1', JSON.stringify([...new Set([...sent, selectedId])]));
+    } catch { /* catat pengiriman best-effort */ }
     setQuickMsg('✅ Terkirim ke Lazada sebagai DRAFT. Cek Seller Center → Products.');
     setQuickConfirm(false);
   };
@@ -393,23 +397,91 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     if (!bulkPlan) { setBulkMsg('❌ Klik "Hitung rencana" dulu supaya Anda melihat jumlah siap vs bermasalah.'); return; }
     if (!bulkConfirm) { setBulkMsg('❌ Centang pernyataan persetujuan dulu.'); return; }
     if (!bulkAdminKey.trim()) { setBulkMsg('❌ Masukkan kunci admin (diketik per aksi, tidak disimpan).'); return; }
-    setBulkBusy('send'); setBulkMsg(''); setBulkResults([]);
-    const { r, data } = await callJson('/api/lazada/bulk', {
-      action: 'send', confirm: true, adminKey: bulkAdminKey.trim(), config: cfg,
-    });
-    setBulkBusy('');
-    setBulkAdminKey(''); setBulkConfirm(false);
-    if (!r.ok) {
-      setBulkMsg(`❌ ${data?.error || 'Kirim massal gagal.'} ${data?.detail || ''}`);
-      if (Array.isArray(data?.invalid)) setBulkResults(data.invalid);
+
+    // Hanya kirim ID dalam rencana, berurutan dalam putaran maksimal 5.
+    // Produk tes Handle Grip telah terkirim lewat tombol satuan, jangan buat duplikat lagi.
+    const pilotAlreadySent = new Set(['68e9c5c3-69c2-4fb4-8349-3bb670bda2f2']);
+    let rememberedSent: string[] = [];
+    let rememberedUncertain: string[] = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem('lazada-bulk-sent-ids-v1') || '[]');
+      if (Array.isArray(saved)) rememberedSent = saved.map(String);
+      const uncertain = JSON.parse(localStorage.getItem('lazada-bulk-uncertain-ids-v1') || '[]');
+      if (Array.isArray(uncertain)) rememberedUncertain = uncertain.map(String);
+    } catch { /* abaikan */ }
+    const sentSet = new Set([...rememberedSent, ...pilotAlreadySent]);
+    const uncertainSet = new Set(rememberedUncertain);
+    const allReadyIds = (bulkPlan.ready || []).map((x: any) => String(x.id)).filter(Boolean);
+    const pendingIds = allReadyIds.filter((id: string) => !sentSet.has(id) && !uncertainSet.has(id));
+    if (!pendingIds.length) {
+      setBulkMsg(uncertainSet.size
+        ? `Tidak ada produk aman tersisa: ${sentSet.size - pilotAlreadySent.size} sudah terkirim dan ${uncertainSet.size} perlu diperiksa di Seller Center.`
+        : '✅ Tidak ada produk baru tersisa di rencana ini. Produk yang sudah terkirim dilewati.');
       return;
     }
-    setBulkResults(data.results || []);
-    setBulkMsg(
-      `✅ Putaran selesai: ${data.sentOk} terkirim, ${data.sentFailed} gagal, ` +
-      `${data.skippedInvalid} dilewati (data belum lengkap). ${data.next || ''}`
-    );
-    handleBulkPlan();
+
+    setBulkBusy('send'); setBulkResults([]);
+    const key = bulkAdminKey.trim();
+    const batchSize = Number(bulkPlan.batchSize) || 5;
+    const totalBatches = Math.ceil(pendingIds.length / batchSize);
+    let accumulated: any[] = [];
+    let completed = 0;
+    let halted = false;
+
+    for (let offset = 0; offset < pendingIds.length; offset += batchSize) {
+      const batch = pendingIds.slice(offset, offset + batchSize);
+      const batchNo = Math.floor(offset / batchSize) + 1;
+      setBulkMsg(`Mengirim putaran ${batchNo}/${totalBatches} — ${completed}/${pendingIds.length} terkirim. Jangan muat ulang halaman.`);
+      try {
+        const { r, data } = await callJson('/api/lazada/bulk', {
+          action: 'send', confirm: true, adminKey: key, config: cfg, ids: batch,
+        });
+        if (!r.ok || !Array.isArray(data?.results)) {
+          const blocked = [...new Set([...rememberedUncertain, ...batch])];
+          rememberedUncertain = blocked;
+          try { localStorage.setItem('lazada-bulk-uncertain-ids-v1', JSON.stringify(blocked)); } catch { /* catat best-effort */ }
+          setBulkMsg(`⛔ Berhenti di putaran ${batchNo}/${totalBatches}: ${data?.error || 'hasil server tidak pasti'}. Putaran ini ditahan agar tidak duplikat; periksa Seller Center.`);
+          halted = true;
+          break;
+        }
+        const results = data.results;
+        accumulated = [...accumulated, ...results];
+        setBulkResults(accumulated);
+        const okIds = results.filter((x: any) => x.ok).map((x: any) => String(x.id));
+        if (okIds.length) {
+          const updated = [...new Set([...sentSet, ...okIds])];
+          try { localStorage.setItem('lazada-bulk-sent-ids-v1', JSON.stringify(updated)); } catch { /* lanjutkan sesi ini */ }
+          okIds.forEach((id: string) => sentSet.add(id));
+          completed += okIds.length;
+        }
+        const failed = results.filter((x: any) => !x.ok);
+        if (failed.length || results.length !== batch.length) {
+          const accounted = new Set(results.map((x: any) => String(x.id)));
+          const blockedNow = [
+            ...failed.map((x: any) => String(x.id)),
+            ...batch.filter((id: string) => !accounted.has(id)),
+          ].filter(Boolean);
+          rememberedUncertain = [...new Set([...rememberedUncertain, ...blockedNow])];
+          try { localStorage.setItem('lazada-bulk-uncertain-ids-v1', JSON.stringify(rememberedUncertain)); } catch { /* catat best-effort */ }
+          setBulkMsg(`⛔ Berhenti setelah putaran ${batchNo}/${totalBatches}: ${completed} terkirim, ${failed.length} gagal/tidak pasti. Produk ragu ditahan agar tidak duplikat; cek Seller Center.`);
+          halted = true;
+          break;
+        }
+      } catch (e: any) {
+        rememberedUncertain = [...new Set([...rememberedUncertain, ...batch])];
+        try { localStorage.setItem('lazada-bulk-uncertain-ids-v1', JSON.stringify(rememberedUncertain)); } catch { /* catat best-effort */ }
+        setBulkMsg(`⛔ Sambungan putus di putaran ${batchNo}/${totalBatches}; hasil putaran ini tidak pasti. Putaran ditahan agar tidak duplikat; cek Seller Center. ${e?.message || ''}`);
+        halted = true;
+        break;
+      }
+      if (offset + batchSize < pendingIds.length) await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+
+    setBulkBusy('');
+    setBulkAdminKey(''); setBulkConfirm(false);
+    if (!halted) {
+      setBulkMsg(`✅ Selesai: ${completed} produk baru terkirim bertahap (maks ${batchSize} per putaran). ${sentSet.size - pilotAlreadySent.size} produk sudah tercatat terkirim dan dilewati.`);
+    }
   };
 
   const handleDownloadAll = async () => {
@@ -647,7 +719,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
         <p className="text-sm font-black mb-1">4) Kirim SEMUA produk sekaligus (bulk)</p>
         <p className="text-[11px] text-gray-600 mb-2">
           Produk yang datanya belum lengkap (SKU/berat/dimensi/stok/kategori/foto) <b>dilewati</b> dan dilaporkan —
-          tidak ditebak. Dikirim bertahap <b>maks 5 produk per putaran</b> dengan jeda aman.
+          tidak ditebak. Sekali klik mengirim otomatis bertahap <b>maks 5 produk per putaran</b> dengan jeda aman. Handle Grip yang sudah dipakai untuk tes dilewati.
         </p>
 
         <div className="grid grid-cols-2 gap-2 mb-2">
