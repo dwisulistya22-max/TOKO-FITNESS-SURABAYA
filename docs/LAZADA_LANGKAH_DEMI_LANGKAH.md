@@ -268,3 +268,15 @@ GetCategoryTree Lazada dan dicocokkan dengan nama produk asli di Sanity.
 Catatan: produk dalam satu jenis bisa berbeda jauh (mis. Commercial Fitness berisi mesin leg press
 dan set dumbbell). Untuk produk yang jauh berbeda, isi beratnya satu per satu di bagian
 **Overrides eksplisit** pada produk itu.
+
+## Pratinjau tanpa membuka panel
+
+Buka `https://www.tokofitnesssurabaya.com/api/lazada/bulk?brand=No%20Brand&skuPrefix=TFS-&weight=80000&l=190&w=85&h=40`
+
+Halaman ini hanya membaca Sanity dan menghitung: berapa siap, berapa belum, dan apa alasannya.
+Tidak memanggil Lazada, tidak butuh `LAZADA_SYNC_ENABLED`, tidak butuh kunci admin.
+
+> **Penting soal paket Vercel Hobby:** maksimal **12 fungsi** per deployment.
+> File `.js` di dalam `api/` (kecuali folder berawalan `_`) dihitung sebagai fungsi.
+> Karena itu pratinjau digabung ke `api/lazada/bulk.js` (GET), bukan file baru.
+> Sebelum menambah endpoint baru, cek jumlahnya dulu: `find api -name "*.js" -not -path "*/_lib/*" | wc -l`
