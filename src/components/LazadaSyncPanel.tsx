@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Download, Eye, FlaskConical, RefreshCw, Send, ShieldAlert, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Download, Eye, FlaskConical, RefreshCw, Send, ShieldAlert, ShieldCheck, Sparkles, XCircle } from 'lucide-react';
+import { presetFor } from '../lib/lazada-category-presets';
 
 type StatusResp = {
   ok: boolean;
@@ -236,6 +237,23 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
     }));
   };
 
+  // Isi peta kategori dari saran yang sudah dicek terhadap GetCategoryTree + nama produk Sanity.
+  // Hanya mengisi yang masih kosong supaya isian manual admin tidak tertimpa.
+  const applyCategoryPresets = () => {
+    let filled = 0;
+    let skipped = 0;
+    setCfg((prev: any) => {
+      const nextMap = { ...(prev.categoryMap || {}) };
+      for (const sc of sanityCats) {
+        if (String(nextMap[sc.name] || '').trim()) { skipped += 1; continue; }
+        const p = presetFor(sc.name);
+        if (p) { nextMap[sc.name] = p.categoryId; filled += 1; }
+      }
+      return { ...prev, categoryMap: nextMap };
+    });
+    setCatMsg(`✅ Saran diisi untuk ${filled} jenis produk${skipped ? `, ${skipped} dilewati karena sudah ada isinya` : ''}. Periksa dulu, lalu klik "1. Hitung rencana".`);
+  };
+
   const handleBulkPlan = async () => {
     setBulkBusy('plan'); setBulkMsg(''); setBulkResults([]);
     const { r, data } = await callJson('/api/lazada/bulk', { action: 'plan', config: cfg });
@@ -451,6 +469,9 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
           <div className="flex gap-1.5 mb-1.5">
             <button onClick={() => loadAllCategories(true)} disabled={!!catBusy || !status?.credentialsComplete} title={!status?.credentialsComplete ? 'Butuh App Key + Access Token di server' : 'Ambil daftar kategori asli dari Lazada'} className="flex-1 bg-purple-700 text-white text-[11px] font-bold py-2 rounded-xl disabled:opacity-40">
               {catBusy === 'all' ? 'Memuat…' : `Muat daftar kategori Lazada (${catAll.length || 0})`}
+            </button>
+            <button onClick={applyCategoryPresets} disabled={sanityCats.length === 0} title={sanityCats.length === 0 ? 'Klik "1. Hitung rencana" dulu' : 'Isi otomatis 9 jenis produk dengan kategori Lazada yang sudah dicocokkan'} className="bg-white border border-purple-400 text-purple-800 text-[11px] font-bold py-2 px-2 rounded-xl disabled:opacity-40 flex items-center gap-1 whitespace-nowrap">
+              <Sparkles className="w-3 h-3" /> Isi saran
             </button>
           </div>
           {catMsg && <p className="text-[10px] font-bold text-purple-800 mb-1">{catMsg}</p>}
