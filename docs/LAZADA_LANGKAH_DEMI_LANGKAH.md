@@ -280,3 +280,24 @@ Tidak memanggil Lazada, tidak butuh `LAZADA_SYNC_ENABLED`, tidak butuh kunci adm
 > File `.js` di dalam `api/` (kecuali folder berawalan `_`) dihitung sebagai fungsi.
 > Karena itu pratinjau digabung ke `api/lazada/bulk.js` (GET), bukan file baru.
 > Sebelum menambah endpoint baru, cek jumlahnya dulu: `find api -name "*.js" -not -path "*/_lib/*" | wc -l`
+
+## LANGKAH 13 — Kirim produk pertama (uji 1 produk)
+
+Setelah `LAZADA_SYNC_ENABLED=true` dan **Redeploy**, cek dulu:
+
+```
+https://www.tokofitnesssurabaya.com/api/lazada/status
+```
+
+Harus muncul `"mode":"SYNC_ARMED"` dan `"syncBlocked":false`.
+
+1. Buka website → footer → **Super Admin** → **Sinkronisasi Lazada**.
+2. Pilih **satu** produk di daftar (mis. produk paling sederhana).
+3. Klik **Validas** lalu **Dry-run** — pastikan tidak ada error.
+4. Isi **kunci admin** (`LAZADA_ADMIN_KEY`), lalu klik tombol **kirim 1 produk**.
+5. Buka Lazada Seller Center → **Products** → cek produk muncul sebagai **draft / menunggu review**.
+
+Kalau langkah 5 berhasil, baru lanjut kirim massal (maks 5 produk per putaran, dengan jeda).
+
+> Produk yang masuk Lazada berstatus **draft/review** dan **tidak menghapus** listing lama
+> yang pernah di-upload manual. Jadi toko bisa berisi dua versi produk selama transisi.
