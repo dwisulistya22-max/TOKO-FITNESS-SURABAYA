@@ -13,13 +13,13 @@
 import { lazadaEnvStatus, readJsonBody, lazadaSignVariants } from '../_lib/lazada.js';
 
 // Endpoint /auth Lazada memakai host global. Beberapa akun memerlukan host negara.
-const TOKEN_BASES = [
+export const TOKEN_BASES = [
   'https://auth.lazada.com/rest',
   'https://api.lazada.com/rest',
   'https://api.lazada.co.id/rest',
 ];
 
-const escapeHtml = (s) =>
+export const escapeHtml = (s) =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -27,7 +27,7 @@ const escapeHtml = (s) =>
     .replace(/"/g, '&quot;');
 
 // Sidik jari rahasia: cukup untuk memastikan nilainya benar, tanpa membocorkan isinya.
-function secretFingerprint(value) {
+export function secretFingerprint(value) {
   const v = String(value || '');
   const flags = [];
   if (!v) flags.push('KOSONG');
@@ -41,7 +41,7 @@ function secretFingerprint(value) {
   return `${head}…${tail} | panjang ${v.length} | ${flags.length ? '⚠ ' + flags.join(' ; ') : '✔ bentuk wajar'}`;
 }
 
-function renderPage({ ok, title, rows = [], note = '', serverRows = [] }) {
+export function renderPage({ ok, title, rows = [], note = '', serverRows = [] }) {
   const body = rows
     .map(
       (r) => `
