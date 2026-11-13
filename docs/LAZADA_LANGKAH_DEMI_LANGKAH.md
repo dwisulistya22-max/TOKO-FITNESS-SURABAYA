@@ -257,3 +257,14 @@ Kalau Refresh Token sudah lewat 30 hari, harus otorisasi ulang di `/api/lazada/a
 
 Daftar saran tersimpan di `src/lib/lazada-category-presets.ts`; ID-nya berasal dari
 GetCategoryTree Lazada dan dicocokkan dengan nama produk asli di Sanity.
+
+## LANGKAH 12 — Isi berat & ukuran (perkiraan)
+
+1. Klik **1. Hitung rencana** supaya 9 jenis produk muncul.
+2. Klik **Isi berat & ukuran perkiraan** → angka per jenis terisi (hanya kotak yang kosong).
+3. Angka ini **perkiraan**, bukan hasil timbangan. Ubah di kotak P/L/T bila perlu.
+4. Klik **1. Hitung rencana** lagi untuk melihat status siap/belum siap.
+
+Catatan: produk dalam satu jenis bisa berbeda jauh (mis. Commercial Fitness berisi mesin leg press
+dan set dumbbell). Untuk produk yang jauh berbeda, isi beratnya satu per satu di bagian
+**Overrides eksplisit** pada produk itu.
