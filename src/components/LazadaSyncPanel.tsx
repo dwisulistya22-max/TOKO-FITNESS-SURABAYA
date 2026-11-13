@@ -41,6 +41,12 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const [preview, setPreview] = useState<any>(null);
   const [actionMsg, setActionMsg] = useState('');
   const [confirmSync, setConfirmSync] = useState(false);
+  // --- kirim cepat 1 produk (panel ringkas di paling atas) ---
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [quickBusy, setQuickBusy] = useState('');
+  const [quickMsg, setQuickMsg] = useState('');
+  const [quickConfirm, setQuickConfirm] = useState(false);
+  const [quickKey, setQuickKey] = useState('');
   const [adminKey, setAdminKey] = useState('');
   const [ovMsg, setOvMsg] = useState('');
   const [ov, setOv] = useState({ categoryId: '', brand: '', brandId: '', sku: '', stock: '', weightGrams: '', lengthCm: '', widthCm: '', heightCm: '' });
@@ -216,6 +222,34 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
       setActionMsg(`❌ ${e?.message || e}`);
     }
     setBusy('');
+  };
+
+  // Kirim cepat: validasi dulu (tidak mengirim), lalu kirim 1 produk bila admin sudah centang.
+  const handleQuickSend = async () => {
+    if (!selectedId) { setQuickMsg('Pilih produk dulu.'); return; }
+    if (!quickConfirm) { setQuickMsg('❌ Centang dulu pernyataan persetujuan.'); return; }
+    if (!quickKey.trim()) { setQuickMsg('❌ Kunci admin belum diisi.'); return; }
+
+    setQuickBusy('validate'); setQuickMsg('Memeriksa data…');
+    const v = await callJson('/api/lazada/validate', { id: selectedId, overrides: buildOverrides() });
+    if (!v.r.ok || !v.data?.validation?.valid) {
+      const errs = v.data?.validation?.errors || [];
+      setQuickBusy('');
+      setQuickMsg(`❌ Belum bisa dikirim: ${v.data?.error || `${errs.length} data belum lengkap`}${errs.length ? ` — ${errs[0].field}: ${errs[0].message}` : ''}`);
+      return;
+    }
+
+    setQuickBusy('send'); setQuickMsg('Mengirim ke Lazada…');
+    const { r, data } = await callJson('/api/lazada/sync', {
+      id: selectedId, confirm: true, adminKey: quickKey.trim(), overrides: buildOverrides(),
+    });
+    setQuickBusy('');
+    if (!r.ok) {
+      setQuickMsg(`❌ ${data?.error || 'Gagal mengirim.'} ${data?.detail || data?.message || ''}${data?.lazadaDetail ? ` — ${String(data.lazadaDetail).slice(0, 200)}` : ''}`);
+      return;
+    }
+    setQuickMsg('✅ Terkirim ke Lazada sebagai DRAFT. Cek Seller Center → Products.');
+    setQuickConfirm(false);
   };
 
   const handleSync = async () => {
@@ -433,6 +467,84 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       )}
+
+      {/* KIRIM CEPAT 1 PRODUK — panel ringkas, dipakai kalau tidak mau scroll jauh */}
+      <div className="rounded-2xl border-2 border-[#0F146D]/30 bg-slate-50 p-3 mb-3">
+        <button onClick={() => setQuickOpen((v) => !v)} className="w-full flex items-center justify-between text-left">
+          <span className="text-sm font-black">⚡ Kirim cepat 1 produk</span>
+          <span className="text-[11px] font-bold text-[#0F146D]">{quickOpen ? 'Tutup' : 'Buka'}</span>
+        </button>
+        {quickOpen && (
+          <div className="mt-2 space-y-2">
+            <p className="text-[10px] text-gray-600">
+              Pilih produk, isi stok bila perlu, centang, lalu kirim. Data lain terisi otomatis dari isian cepat + saran.
+            </p>
+            <select
+              value={selectedId}
+              onChange={(e) => { setSelectedId(e.target.value); setValidation(null); setPreview(null); setQuickMsg(''); }}
+              className={inputCls}
+            >
+              <option value="">— pilih produk —</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>{p.name} — stok {p.stock ?? '?'} — {p.category || 'tanpa kategori'}</option>
+              ))}
+            </select>
+
+            {selectedId && (
+              <div className="grid grid-cols-3 gap-1.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Stok</label>
+                  <input className={inputCls} inputMode="numeric" placeholder="0" value={ov.stock} onChange={(e) => setOv({ ...ov, stock: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 mb-0.5">Kategori</label>
+                  <input className={inputCls} placeholder="15445" value={ov.categoryId} onChange={(e) => setOv({ ...ov, categoryId: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 mb-0.5">SKU</label>
+                  <input className={inputCls} placeholder="TFS-0001" value={ov.sku} onChange={(e) => setOv({ ...ov, sku: e.target.value })} />
+                </div>
+              </div>
+            )}
+
+            {selectedId && (
+              <p className="text-[10px] text-gray-600">
+                Brand <b>{ov.brand || '—'}</b> · Berat <b>{ov.weightGrams || '—'} g</b> ·
+                P/L/T <b>{ov.lengthCm || '—'}/{ov.widthCm || '—'}/{ov.heightCm || '—'} cm</b>
+                {(!ov.brand || !ov.sku) && <span className="text-amber-700"> · masih ada yang kosong</span>}
+              </p>
+            )}
+
+            <label className="flex items-start gap-2 text-[11px] font-bold text-gray-700">
+              <input type="checkbox" checked={quickConfirm} onChange={(e) => setQuickConfirm(e.target.checked)} className="mt-0.5" />
+              Saya menyetujui kirim 1 produk ini sebagai DRAFT.
+            </label>
+            <input
+              type="password"
+              className={inputCls}
+              placeholder="Kunci admin"
+              value={quickKey}
+              onChange={(e) => setQuickKey(e.target.value)}
+              autoComplete="off"
+            />
+            <button
+              onClick={handleQuickSend}
+              disabled={!!quickBusy || !selectedId || status?.syncBlocked}
+              className="w-full bg-[#0F146D] text-white text-sm font-black py-2.5 rounded-xl disabled:opacity-40"
+            >
+              {quickBusy === 'validate' ? 'Memeriksa…' : quickBusy === 'send' ? 'Mengirim…' : 'Kirim 1 produk sekarang'}
+            </button>
+            {quickMsg && (
+              <p className={`text-[11px] font-bold rounded-lg p-2 ${quickMsg.startsWith('✅') ? 'bg-green-50 text-green-800' : quickMsg.startsWith('❌') ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                {quickMsg}
+              </p>
+            )}
+            <p className="text-[10px] text-gray-500">
+              Tombol ini memvalidasi dulu; kalau ada data kurang, tidak ada yang dikirim.
+            </p>
+          </div>
+        )}
+      </div>
 
       <label className={labelCls}>1) Pilih satu produk Sanity</label>
       <div className="flex gap-2 mb-2">
