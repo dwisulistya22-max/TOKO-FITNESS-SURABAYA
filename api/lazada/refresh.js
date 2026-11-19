@@ -38,6 +38,20 @@ export default async function handler(req, res) {
     return res.status(code).json({ ok: false, error: message, ...extra });
   };
 
+  // ⛔ Wajib adminKey: endpoint ini memperbarui token Lazada dan pernah
+  // menampilkan access_token/refresh_token tanpa autentikasi.
+  const q = req.query || {};
+  const givenKey = String(
+    q.adminKey ||
+    (req.headers && req.headers["x-admin-key"]) ||
+    ""
+  ).trim();
+  if (!env.LAZADA_ADMIN_KEY || !givenKey || givenKey !== String(env.LAZADA_ADMIN_KEY)) {
+    return fail(401, "adminKey salah atau belum disediakan.", {
+      note: "Sertakan ?adminKey=KUNCI_ADMIN (atau header x-admin-key) saat memanggil endpoint ini. Kunci diatur lewat env LAZADA_ADMIN_KEY di Vercel.",
+    });
+  }
+
   if (!status.hasAppKey || !status.hasAppSecret || !status.hasRefreshToken) {
     return fail(409, 'Kunci belum lengkap di server.', {
       note: 'Butuh <b>LAZADA_APP_KEY</b>, <b>LAZADA_APP_SECRET</b>, dan <b>LAZADA_REFRESH_TOKEN</b> di Vercel. ' +

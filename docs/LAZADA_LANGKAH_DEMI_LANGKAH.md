@@ -240,7 +240,7 @@ Masing-masing langkah selesai satu per satu, lalu kabari saya.
 
 Access Token Lazada berlaku ±7 hari, Refresh Token ±30 hari.
 
-1. Buka `https://www.tokofitnesssurabaya.com/api/lazada/refresh` di browser.
+1. Buka `https://www.tokofitnesssurabaya.com/api/lazada/refresh?adminKey=KUNCI_ADMIN_KAMU` di browser. (`KUNCI_ADMIN_KAMU` = nilai env `LAZADA_ADMIN_KEY` yang diatur di Vercel — endpoint ini kini wajib adminKey.)
 2. Halaman menampilkan **LAZADA_ACCESS_TOKEN** baru (dan **LAZADA_REFRESH_TOKEN** baru bila Lazada menerbitkannya).
 3. Salin ke Notepad, tempel ke Vercel → **Settings → Environment Variables**, lalu **Redeploy**.
 4. Cek `https://www.tokofitnesssurabaya.com/api/lazada/categories?leaf=1` → harus muncul `{"ok":true,...}`.

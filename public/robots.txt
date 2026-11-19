@@ -1,0 +1,11 @@
+# robots.txt — Toko Fitness Surabaya
+# Dibuat: 2026-11-19
+
+User-agent: *
+Allow: /
+
+# Crawler jangan meng-index endpoint API internal
+Disallow: /api/
+
+# Sitemap resmi
+Sitemap: https://www.tokofitnesssurabaya.com/sitemap.xml
