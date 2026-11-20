@@ -487,7 +487,7 @@ export default function LazadaSyncPanel({ onBack }: { onBack: () => void }) {
   const handleDownloadAll = async () => {
     setBulkMsg('Menyiapkan CSV…');
     try {
-      const r = await fetch('/api/lazada/export-all', {
+      const r = await fetch('/api/lazada/export', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: cfg }),
       });
       if (!r.ok) {
