@@ -415,6 +415,7 @@ export function validateTtsProduct(p, overrides = {}) {
     stock,
     weightGrams,
     usableImages: usable,
+    imageCount: usable.length,
     discountPrice: Number.isFinite(Number(o.discountPrice ?? p.discountPrice)) ? Number(o.discountPrice ?? p.discountPrice) : null,
   };
 }

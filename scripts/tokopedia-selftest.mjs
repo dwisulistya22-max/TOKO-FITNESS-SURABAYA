@@ -63,6 +63,7 @@ check('judul asli terpakai (>=25)', v1.title === complete.name && v1.title.lengt
 check('seller_sku bersih', v1.sellerSku === 'TF-TRD-X500');
 check('berat 45000g dipakai', v1.weightGrams === 45000);
 check('2 gambar usable', v1.usableImages.length === 2);
+check('imageCount ikut terkirim (dibaca panel)', v1.imageCount === 2);
 
 console.log('\n2) Validasi produk bermasalah:');
 const broken = { _id: 'x', id: 'x', name: '', price: 0, stock: -3, images: [] };
