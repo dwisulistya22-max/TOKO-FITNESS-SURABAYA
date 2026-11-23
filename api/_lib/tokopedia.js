@@ -245,7 +245,13 @@ export async function ttsFetch(pathname, { method = 'GET', params = {}, body = n
   try { json = JSON.parse(text); } catch { /* bukan JSON */ }
   if (!json) throw new Error(`Respons TikTok bukan JSON (HTTP ${res.status}): ${text.slice(0, 300)}`);
   if (Number(json.code) !== 0) {
-    const err = new Error(json.message || `TikTok API error code ${json.code}`);
+    let msg = json.message || `TikTok API error code ${json.code}`;
+    if (Number(json.code) === 105005) {
+      msg += ' — Scope minim belum aktif: buka Partner Center → App & Service → Manage API, '
+        + 'aktifkan Product Basic, Product Modify (write), lalu Logistics basic; '
+        + 'setelah itu otorisasi ULANG dari panel (token refresh tidak menambah scope).';
+    }
+    const err = new Error(msg);
     err.code = json.code;
     err.data = json.data;
     err.httpStatus = res.status;
