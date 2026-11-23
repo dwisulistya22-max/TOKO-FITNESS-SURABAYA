@@ -60,6 +60,22 @@ check('tanpa adminKey → 401', r.statusCode === 401);
 r = await call({ action: 'dryrun', method: 'POST', body: { id: 'x', adminKey: KEY } });
 check('adminKey benar → lolos gate (bukan 401/405)', r.statusCode !== 401 && r.statusCode !== 405, `status=${r.statusCode} ${JSON.stringify(r.body).slice(0, 140)}`);
 
+// regresi: produk NYATA dari Sanity harus ditemukan (bug _id vs id pernah bikin 404 selalu)
+try {
+  const { fetchSanityProducts } = await import('../api/_lib/lazada.js');
+  const sp = await fetchSanityProducts();
+  const realId = (sp.products || []).find((p) => p.id)?.id || '';
+  if (realId) {
+    r = await call({ action: 'dryrun', method: 'POST', body: { id: realId, adminKey: KEY } });
+    check('dryrun produk nyata → ok:true', r.statusCode === 200 && r.body.ok === true, `status=${r.statusCode} ${JSON.stringify(r.body).slice(0, 160)}`);
+    check('dryrun tanpa kategori → wouldSync:false + previewError', r.body.wouldSync === false && Boolean(r.body.previewError), JSON.stringify(r.body).slice(0, 160));
+  } else {
+    check('dryrun produk nyata → ok:true', false, 'Sanity tidak mengembalikan produk');
+  }
+} catch (e) {
+  check('dryrun produk nyata → ok:true', false, e.message);
+}
+
 console.log('\n5) sync (POST, adminKey + LOCK syncEnabled + confirm):');
 r = await call({ action: 'sync', method: 'POST', body: { id: 'x', adminKey: KEY, confirm: true } });
 check('flag mati → 409 (terkunci)', r.statusCode === 409 && /terkunci/i.test(r.body.error || ''), `status=${r.statusCode} ${r.body?.error}`);

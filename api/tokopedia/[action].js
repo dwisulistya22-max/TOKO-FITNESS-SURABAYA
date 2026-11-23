@@ -284,7 +284,8 @@ async function handleWarehouses(req, res) {
 async function prepareOne(body) {
   const { projectId, products } = await fetchSanityProducts();
   const id = String(body.id || '').trim();
-  const raw = products.find((p) => String(p._id) === id);
+  // fetchSanityProducts sudah ternormalisasi → field-nya `id` (bukan `_id`)
+  const raw = products.find((p) => String(p.id || p._id || '') === id);
   if (!raw) {
     const err = new Error(`Produk "${id}" tidak ada di Sanity (${projectId || 'n/a'}).`);
     err.status = 404;
