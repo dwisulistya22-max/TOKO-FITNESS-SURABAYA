@@ -1,5 +1,6 @@
 // Lib bersama integrasi Tokopedia & TikTok Shop (Partner Center).
 // Docs: https://partner.tiktokshop.com/docv2/page/authorization-overview-202407
+import { isPlaceholderImage } from './lazada.js';
 //
 // Aturan keamanan (WAJIB):
 // - App Secret & token HANYA di server (env Vercel), tidak pernah dirender ke browser
@@ -176,3 +177,293 @@ export function renderTokensPage({ ok, title, data, note, error }) {
 }
 
 export { readBody };
+
+/* ================================================================
+   PHASE 2 — TikTok Shop Products API (create + stok)
+   ---------------------------------------------------------------
+   Endpoint (semua dari Partner Center docs, divalidasi 19/11/2026):
+     GET  /authorization/202309/shops     -> shops[].cipher (shop_cipher)
+     GET  /product/202309/categories      -> daftar kategori v2 per platform
+     GET  /logistics/202309/warehouses    -> daftar gudang toko
+     POST /product/202309/images/upload   -> multipart, data + use_case -> data.uri
+     POST /product/202309/products        -> create product (save_mode)
+     POST /product/202309/products/inventory -> update stok sempit (tanpa review ulang)
+
+   Sign (divalidasi terhadap contoh resmi docs — reproduksi PERSIS):
+     1. ambil query params KECUALI sign & access_token, sort key asc
+     2. concat key+value mentah
+     3. prepend pathname (contoh "/authorization/202309/shops")
+     4. append body JSON mentah (SKIP jika multipart)
+     5. HMAC-SHA256(secret, secret + str + secret) -> hex
+
+   Base URL: https://open-api.tiktokglobalshop.com
+   Header auth: x-tts-access-token
+   ================================================================ */
+
+export const TTS_BASE = 'https://open-api.tiktokglobalshop.com';
+export const TTS_IMAGE_MAX_COUNT = 9; // main_images maks 9
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10MB
+const TITLE_MIN_ID = 25; // ID: [25,255]
+const TITLE_MAX_ID = 255;
+
+/** Sign algoritme TikTok Shop — lihat header modul ini. */
+export function ttsSign(pathname, params, bodyStr, appSecret) {
+  const keys = Object.keys(params)
+    .filter((k) => k !== 'sign' && k !== 'access_token')
+    .sort();
+  let str = pathname + keys.map((k) => k + String(params[k])).join('');
+  if (bodyStr) str += bodyStr;
+  return crypto.createHmac('sha256', appSecret).update(appSecret + str + appSecret).digest('hex');
+}
+
+/**
+ * Panggil TikTok Open API dengan sign otomatis.
+ * `formData` (FormData multipart) mengirim tanpa content-type manual & tanpa body di sign.
+ * Melempar Error dengan .code / .data / .httpStatus saat API membalas code != 0.
+ */
+export async function ttsFetch(pathname, { method = 'GET', params = {}, body = null, formData = null, accessToken } = {}) {
+  const env = process.env;
+  const appKey = String(env.TOKOPEDIA_APP_KEY || '').trim();
+  const appSecret = String(env.TOKOPEDIA_APP_SECRET || '').trim();
+  const token = accessToken || String(env.TOKOPEDIA_ACCESS_TOKEN || '').trim();
+  if (!appKey || !appSecret) throw new Error('TOKOPEDIA_APP_KEY/SECRET belum diisi di Vercel.');
+  if (!token) throw new Error('TOKOPEDIA_ACCESS_TOKEN belum ada — otorisasi dulu dari panel.');
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const allParams = { ...params, app_key: appKey, timestamp };
+  const bodyStr = formData ? '' : body != null ? JSON.stringify(body) : '';
+  const sign = ttsSign(pathname, allParams, bodyStr, appSecret);
+
+  const url = new URL(TTS_BASE + pathname);
+  for (const [k, v] of Object.entries({ ...allParams, sign })) url.searchParams.set(k, String(v));
+
+  const headers = { 'x-tts-access-token': token };
+  if (bodyStr) headers['content-type'] = 'application/json';
+  const res = await fetch(url, { method, headers, body: formData || bodyStr || undefined });
+  const text = await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch { /* bukan JSON */ }
+  if (!json) throw new Error(`Respons TikTok bukan JSON (HTTP ${res.status}): ${text.slice(0, 300)}`);
+  if (Number(json.code) !== 0) {
+    const err = new Error(json.message || `TikTok API error code ${json.code}`);
+    err.code = json.code;
+    err.data = json.data;
+    err.httpStatus = res.status;
+    throw err;
+  }
+  return json;
+}
+
+/* ── shop_cipher (cache per container, 10 menit) ───────────────── */
+
+let cipherCache = { value: '', at: 0 };
+
+export async function getTtsShopCipher(force = false) {
+  const now = Date.now();
+  if (!force && cipherCache.value && now - cipherCache.at < 10 * 60 * 1000) return cipherCache.value;
+  const json = await ttsFetch('/authorization/202309/shops');
+  const shops = (json.data && json.data.shops) || [];
+  if (!shops.length) throw new Error('Token ini tidak terhubung ke toko mana pun.');
+  const wantCode = String(process.env.TOKOPEDIA_SHOP_CODE || '').trim();
+  const shop = (wantCode && shops.find((s) => s.code === wantCode)) || shops[0];
+  cipherCache = { value: shop.cipher, at: Date.now() };
+  return shop.cipher;
+}
+
+/* ── Kategori v2: intersect TIKTOK_SHOP & TOKOPEDIA ────────────── */
+
+export async function fetchTtsCategories({ keyword = '' } = {}) {
+  const shopCipher = await getTtsShopCipher();
+  const base = { shop_cipher: shopCipher, category_version: 'v2' };
+  if (keyword) base.keyword = keyword;
+  const get = (platform) => ttsFetch('/product/202309/categories', { params: { ...base, listing_platform: platform } });
+
+  let list = [];
+  let dualOk = false;
+  try {
+    const [a, b] = await Promise.all([get('TIKTOK_SHOP'), get('TOKOPEDIA')]);
+    const setB = new Set((b.data && b.data.categories || []).map((c) => String(c.id)));
+    list = (a.data && a.data.categories || []).filter((c) => setB.has(String(c.id)));
+    dualOk = true;
+  } catch {
+    const a = await get('TIKTOK_SHOP');
+    list = (a.data && a.data.categories) || [];
+  }
+
+  const byId = new Map(list.map((c) => [String(c.id), c]));
+  const pathOf = (c) => {
+    const parts = [c.local_name || String(c.id)];
+    let p = byId.get(String(c.parent_id));
+    let guard = 0;
+    while (p && guard++ < 12) {
+      parts.unshift(p.local_name || String(p.id));
+      p = byId.get(String(p.parent_id));
+    }
+    return parts.join(' › ');
+  };
+  const leaves = list
+    .filter((c) => c.is_leaf)
+    .map((c) => ({ id: String(c.id), name: c.local_name || String(c.id), path: pathOf(c) }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+  return { categories: leaves, dualPlatform: dualOk, total: list.length };
+}
+
+/* ── Gudang ────────────────────────────────────────────────────── */
+
+export async function fetchTtsWarehouses() {
+  const shopCipher = await getTtsShopCipher();
+  const json = await ttsFetch('/logistics/202309/warehouses', { params: { shop_cipher: shopCipher } });
+  const all = (json.data && json.data.warehouses) || [];
+  const active = all.filter((w) => String(w.effect_status || '').toUpperCase() === 'ENABLED');
+  const pick = active.find((w) => w.is_default) || active[0] || all[0] || null;
+  return { warehouses: all, defaultId: pick ? String(pick.id) : '', defaultName: pick ? pick.name : '' };
+}
+
+/* ── Upload gambar (multipart → data.uri) ──────────────────────── */
+
+export async function uploadTtsImage(imageUrl, useCase = 'MAIN_IMAGE') {
+  const res = await fetch(imageUrl);
+  if (!res.ok) throw new Error(`Unduh gambar gagal (HTTP ${res.status}): ${imageUrl}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > IMAGE_MAX_BYTES) throw new Error(`Gambar >10MB — kompres dulu di Sanity: ${imageUrl}`);
+  const ctype = (res.headers.get('content-type') || 'image/jpeg').split(';')[0];
+  const ext = ctype.includes('png') ? 'png' : ctype.includes('webp') ? 'webp' : 'jpg';
+  const fd = new FormData();
+  fd.append('data', new Blob([buf], { type: ctype }), `img.${ext}`);
+  fd.append('use_case', useCase);
+  const json = await ttsFetch('/product/202309/images/upload', {
+    method: 'POST',
+    formData: fd,
+    params: { shop_cipher: await getTtsShopCipher() },
+  });
+  const uri = json.data && json.data.uri;
+  if (!uri) throw new Error('Upload gambar tidak mengembalikan data.uri.');
+  return uri;
+}
+
+/* ── Validasi + payload create-product ─────────────────────────── */
+
+/**
+ * Validasi produk untuk TikTok Shop ID.
+ * overrides = field panel (categoryId, warehouseId, saveMode, nama judul, dst).
+ */
+export function validateTtsProduct(p, overrides = {}) {
+  const errors = [];
+  const warnings = [];
+  const o = overrides || {};
+
+  // judul: ID minta [25,255] — pad otomatis kalau terlalu pendek
+  let title = String(o.title || p.name || '').trim();
+  if (!title) {
+    errors.push({ field: 'name', message: 'Nama produk kosong.' });
+  } else if (title.length < TITLE_MIN_ID) {
+    title = `${title} - Toko Fitness Surabaya`;
+    warnings.push({ field: 'name', message: `Judul dipendek jadi ${TITLE_MIN_ID}+ karakter: "${title}"` });
+  }
+  if (title.length > TITLE_MAX_ID) {
+    errors.push({ field: 'name', message: `Nama ${title.length} karakter (maks ${TITLE_MAX_ID}).` });
+  }
+
+  // harga
+  const price = Number(o.price ?? p.price);
+  if (!Number.isFinite(price) || price <= 0) {
+    errors.push({ field: 'price', message: 'Harga kosong atau tidak valid.' });
+  }
+
+  // stok: bilangan bulat >= 0
+  const stockRaw = o.stock ?? p.stock;
+  const stock = Number(stockRaw);
+  if (!Number.isInteger(stock) || stock < 0) {
+    errors.push({ field: 'stock', message: 'Stok harus bilangan bulat >= 0.' });
+  }
+
+  // gambar — pakai filter placeholder milik lib Lazada
+  const usable = (p.images || []).filter((u) => u && !isPlaceholderImage(u));
+  if (!usable.length) {
+    errors.push({ field: 'images', message: 'Tidak ada gambar valid (semua placeholder/kosong).' });
+  }
+
+  // berat wajib untuk payload — default 1 kg
+  const wRaw = Number(o.weightGrams ?? p.weightGrams);
+  let weightGrams = Number.isFinite(wRaw) && wRaw > 0 ? Math.round(wRaw) : null;
+  if (!weightGrams) {
+    weightGrams = 1000;
+    warnings.push({ field: 'weightGrams', message: 'Berat tidak ada — pakai default 1 kg.' });
+  }
+
+  // seller_sku: 1-50, tanpa spasi (ganti spasi jadi strip)
+  let sellerSku = String(o.sku || p.sku || '').trim().replace(/\s+/g, '-');
+  if (!sellerSku) {
+    sellerSku = `TF-${String(p.id || p._id || 'X').slice(-8)}`;
+    warnings.push({ field: 'sku', message: `SKU dibuat otomatis: ${sellerSku}` });
+  }
+  if (sellerSku.length > 50) sellerSku = sellerSku.slice(0, 50);
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    title,
+    sellerSku,
+    price,
+    stock,
+    weightGrams,
+    usableImages: usable,
+    discountPrice: Number.isFinite(Number(o.discountPrice ?? p.discountPrice)) ? Number(o.discountPrice ?? p.discountPrice) : null,
+  };
+}
+
+/**
+ * Bangun request body POST /product/202309/products.
+ * opts: { categoryId, warehouseId, imageUris, saveMode }
+ */
+export function buildTtsPayload(p, v, opts = {}) {
+  const { categoryId, warehouseId, imageUris = [], saveMode = 'AS_DRAFT' } = opts;
+  if (!categoryId) throw new Error('categoryId wajib — pilih kategori leaf TikTok dulu.');
+  if (!warehouseId) throw new Error('warehouseId wajib — tidak ada gudang aktif di toko.');
+  if (!imageUris.length) throw new Error('imageUris kosong — upload gambar dulu sebelum create.');
+
+  const price = Number(v.price);
+  const discount = v.discountPrice;
+  const sale = Number.isFinite(discount) && discount > 0 && discount < price ? discount : price;
+  const money = (n) => Number(n).toFixed(2);
+
+  const descText = String(p.description || '').trim()
+    || `${v.title} — produk original dari Toko Fitness Surabaya.`;
+  const descHtml = '<p>' + escapeHtml(descText).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br />') + '</p>';
+
+  return {
+    save_mode: saveMode === 'LISTING' ? 'LISTING' : 'AS_DRAFT',
+    description: descHtml.slice(0, 10000),
+    category_id: String(categoryId),
+    main_images: imageUris.slice(0, TTS_IMAGE_MAX_COUNT).map((uri) => ({ uri })),
+    title: v.title,
+    skus: [
+      {
+        seller_sku: v.sellerSku,
+        price: { amount: money(price), currency: 'IDR', sale_price: money(sale) },
+        inventory: [{ warehouse_id: String(warehouseId), quantity: Number(v.stock) || 0 }],
+      },
+    ],
+    package_weight: { value: (v.weightGrams / 1000).toFixed(2), unit: 'KILOGRAM' },
+    external_product_id: String(p.id || p._id || '').slice(0, 999),
+    category_version: 'v2',
+    listing_platforms: ['TIKTOK_SHOP', 'TOKOPEDIA'],
+  };
+}
+
+/**
+ * Status env untuk panel Phase 2: envStatus + lock sinkron.
+ * Lock = TOKOPEDIA_SYNC_ENABLED=true DAN semua kredensial/token lengkap.
+ */
+export function ttsEnvStatus() {
+  const env = process.env;
+  const base = envStatus();
+  const syncEnabled = String(env.TOKOPEDIA_SYNC_ENABLED || '').toLowerCase() === 'true';
+  const ready = Boolean(
+    syncEnabled && base.hasAppKey && base.hasAppSecret
+    && base.hasAccessToken && base.hasRefreshToken,
+  );
+  return { ...base, syncEnabled, syncBlocked: !ready };
+}
+
