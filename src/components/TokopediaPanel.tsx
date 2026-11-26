@@ -493,24 +493,6 @@ export default function TokopediaPanel({ onBack }: { onBack: () => void }) {
             <Link2 size={17} />
             {busy === 'link' ? 'Membuat link…' : 'Buat Link Otorisasi'}
           </button>
-          {authLink && (
-            <div className="mt-3">
-              <input
-                readOnly
-                value={authLink}
-                onFocus={(e) => e.currentTarget.select()}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono bg-slate-50"
-              />
-              <a
-                href={authLink}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-emerald-700 transition-colors"
-              >
-                <ExternalLink size={15} /> Buka &amp; Setujui di Seller Center
-              </a>
-            </div>
-          )}
         </div>
       )}
 
@@ -534,6 +516,32 @@ export default function TokopediaPanel({ onBack }: { onBack: () => void }) {
             <RefreshCw size={17} className={busy === 'refresh' ? 'animate-spin' : ''} />
             {busy === 'refresh' ? 'Memperpanjang…' : 'Perpanjang Token Sekarang'}
           </button>
+          <button
+            onClick={makeLink}
+            disabled={!adminKey || busy === 'link'}
+            className="mt-3 w-full bg-white border border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors disabled:opacity-40 cursor-pointer"
+          >
+            <Link2 size={16} />
+            {busy === 'link' ? 'Membuat link…' : 'Buat Link Otorisasi Baru (re-otorisasi)'}
+          </button>
+          {authLink && (
+            <div className="mt-3">
+              <input
+                readOnly
+                value={authLink}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono bg-slate-50"
+              />
+              <a
+                href={authLink}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-emerald-700 transition-colors"
+              >
+                <ExternalLink size={15} /> Buka &amp; Setujui di Seller Center
+              </a>
+            </div>
+          )}
         </div>
       )}
 
