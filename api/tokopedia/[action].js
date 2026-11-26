@@ -62,6 +62,30 @@ async function handleStatus(req, res) {
   });
 }
 
+/* ── helper state: cookie cadangan + diagnosa kegagalan ── */
+
+function parseCookies(header) {
+  const out = {};
+  String(header || '').split(';').forEach((p) => {
+    const i = p.indexOf('=');
+    if (i > 0) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+  });
+  return out;
+}
+
+/** Alasan spesifik kenapa state query ditolak (tanpa membocorkan secret). */
+function stateReason(raw) {
+  const s = String(raw || '');
+  if (!s) return 'state tidak ada di URL callback';
+  const dot = s.indexOf('.');
+  if (dot < 1) return 'format state tidak benar';
+  const ts = Number(s.slice(0, dot));
+  if (!Number.isFinite(ts)) return 'timestamp state tidak terbaca';
+  const ageMin = Math.round((Date.now() - ts) / 60000);
+  if (Math.abs(Date.now() - ts) > 30 * 60 * 1000) return `state kedaluwarsa (dibuat ${ageMin} menit lalu; batas 30 menit)`;
+  return 'signature tidak cocok (state kemungkinan diganti/diubah platform)';
+}
+
 /* ── auth-link ──────────────────────────────────────────────────────── */
 async function handleAuthLink(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -81,6 +105,12 @@ async function handleAuthLink(req, res) {
 
   const state = makeState();
   const url = `${AUTH_BASE}?service_id=${encodeURIComponent(s.effectiveServiceId)}&state=${encodeURIComponent(state)}`;
+  // Cadangan bila platform tidak membalikkan ?state= ke callback (terbukti pada re-auth).
+  // Domain induk agar terkirim baik ke apex maupun www; Lax = ikut redirect top-level GET.
+  res.setHeader(
+    'Set-Cookie',
+    `tts_state=${encodeURIComponent(state)}; Domain=tokofitnesssurabaya.com; Path=/api/tokopedia/callback; HttpOnly; Secure; SameSite=Lax; Max-Age=1800`,
+  );
   return res.status(200).json({
     ok: true,
     url,
@@ -125,14 +155,23 @@ async function handleCallback(req, res) {
       renderTokensPage({ ok: false, title: 'Code tidak ditemukan', error: 'Parameter code kosong. Mulailah dari panel admin.' }),
     );
   }
+  const cookieState = parseCookies(req.headers.cookie).tts_state || '';
   if (!verifyState(state)) {
-    return res.status(400).send(
-      renderTokensPage({
-        ok: false,
-        title: 'State tidak valid',
-        error: 'Link kedaluwarsa (>30 menit) atau tidak dibuat dari panel. Buka lagi link otorisasi dari panel admin.',
-      }),
-    );
+    // Cadangan: cookie yang kita tanam saat link dibuat (state di URL hilang/diubah platform)
+    if (cookieState && verifyState(cookieState)) {
+      console.warn('[tokopedia/callback] state query ditolak, memakai cookie cadangan:', stateReason(state));
+    } else {
+      const ckNote = cookieState
+        ? ` Cookie cadangan juga ${stateReason(cookieState).includes('kedaluwarsa') ? 'kedaluwarsa' : 'ditolak'}.`
+        : ' Cookie cadangan tidak ada (buka link dari browser yang sama dengan panel).';
+      return res.status(400).send(
+        renderTokensPage({
+          ok: false,
+          title: 'State tidak valid',
+          error: `Penyebab: ${stateReason(state)}.${ckNote} Buka lagi link otorisasi dan selesaikan dalam 30 menit.`,
+        }),
+      );
+    }
   }
 
   try {

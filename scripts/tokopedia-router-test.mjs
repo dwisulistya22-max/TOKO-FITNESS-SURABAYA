@@ -19,6 +19,7 @@ function mockRes() {
     setHeader(k, v) { this.headers[k] = v; },
     status(c) { this.statusCode = c; return this; },
     json(o) { this.body = o; return this; },
+    send(o) { this.body = o; return this; },
     end() { return this; },
   };
 }
@@ -116,6 +117,32 @@ r = await call({ action: 'sync', method: 'GET' });
 check('sync GET → 405 (sebelum gate)', r.statusCode === 405, `status=${r.statusCode}`);
 r = await call({ action: 'refresh', method: 'GET' });
 check('refresh lama tetap ada', r.statusCode !== 404, `status=${r.statusCode}`);
+
+console.log('\n8) callback: state hilang -> cookie cadangan + diagnosa:');
+process.env.TOKOPEDIA_APP_KEY = 'k';
+process.env.TOKOPEDIA_APP_SECRET = 's';
+const { makeState } = await import('../api/_lib/tokopedia.js');
+
+r = await call({ action: 'callback', query: { code: 'fake-code-1' } });
+check('tanpa state -> 400 + penyebab "state tidak ada"',
+  r.statusCode === 400 && /state tidak ada di URL/.test(String(r.body)),
+  `status=${r.statusCode} ${String(r.body).slice(0, 180)}`);
+
+const oldState = `${Math.floor(Date.now() / 1000) - 3600}.c2ln`;
+r = await call({ action: 'callback', query: { code: 'fake-code-2', state: oldState } });
+check('state tua -> 400 + penyebab "kedaluwarsa"',
+  r.statusCode === 400 && /kedaluwarsa/.test(String(r.body)),
+  `status=${r.statusCode} ${String(r.body).slice(0, 180)}`);
+
+const fresh = makeState();
+r = await call({
+  action: 'callback',
+  query: { code: 'fake-code-xyz' },
+  headers: { cookie: `tts_state=${encodeURIComponent(fresh)}` },
+});
+check('cookie cadangan diterima (lolos state, gagal di penukaran code palsu)',
+  !/State tidak valid/.test(String(r.body)),
+  `status=${r.statusCode} ${String(r.body).slice(0, 180)}`);
 
 console.log(`\n== Hasil: ${pass} lolos, ${fail} gagal ==`);
 if (fail > 0) process.exit(1);
