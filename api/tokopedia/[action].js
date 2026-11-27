@@ -119,6 +119,38 @@ async function handleAuthLink(req, res) {
   });
 }
 
+/* ── auth-go: buka link otorisasi SEKALIGUS tanam cookie state (satu URL untuk browser) ── */
+
+async function handleAuthGo(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  if (req.method !== 'GET') return res.status(405).send('Gunakan GET.');
+
+  const gate = checkAdminKey(req, req.query);
+  if (!gate.ok) {
+    return res.status(gate.code).send(renderTokensPage({ ok: false, title: 'adminKey salah', error: gate.error }));
+  }
+
+  const s = envStatus();
+  if (!s.credentialsComplete) {
+    return res.status(409).send(
+      renderTokensPage({
+        ok: false,
+        title: 'Konfigurasi belum lengkap',
+        error: 'TOKOPEDIA_APP_KEY / TOKOPEDIA_APP_SECRET belum diatur di Vercel.',
+      }),
+    );
+  }
+
+  const state = makeState();
+  res.setHeader(
+    'Set-Cookie',
+    `tts_state=${encodeURIComponent(state)}; Domain=tokofitnesssurabaya.com; Path=/api/tokopedia/callback; HttpOnly; Secure; SameSite=Lax; Max-Age=1800`,
+  );
+  res.setHeader('Location', `${AUTH_BASE}?service_id=${encodeURIComponent(s.effectiveServiceId)}&state=${encodeURIComponent(state)}`);
+  return res.status(302).end();
+}
+
 /* ── callback (Redirect URL terdaftar di Partner Center) ─────────────── */
 async function handleCallback(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -546,6 +578,8 @@ export default async function handler(req, res) {
       return handleStatus(req, res);
     case 'auth-link':
       return handleAuthLink(req, res);
+    case 'auth-go':
+      return handleAuthGo(req, res);
     case 'callback':
       return handleCallback(req, res);
     case 'refresh':
@@ -566,7 +600,7 @@ export default async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(404).json({
         ok: false,
-        error: `Endpoint /api/tokopedia/${action || '?'} tidak dikenal. Tersedia: status, auth-link, callback, refresh, products, categories, warehouses, dryrun, sync, inventory.`,
+        error: `Endpoint /api/tokopedia/${action || '?'} tidak dikenal. Tersedia: status, auth-link, auth-go, callback, refresh, products, categories, warehouses, dryrun, sync, inventory.`,
       });
   }
 }

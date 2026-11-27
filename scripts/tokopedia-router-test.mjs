@@ -144,6 +144,19 @@ check('cookie cadangan diterima (lolos state, gagal di penukaran code palsu)',
   !/State tidak valid/.test(String(r.body)),
   `status=${r.statusCode} ${String(r.body).slice(0, 180)}`);
 
+console.log('\n9) auth-go: redirect + cookie (satu link untuk browser):');
+process.env.TOKOPEDIA_APP_KEY = 'k';
+process.env.TOKOPEDIA_APP_SECRET = 's';
+
+r = await call({ action: 'auth-go', query: {} });
+check('tanpa adminKey -> 401', r.statusCode === 401, `status=${r.statusCode}`);
+
+r = await call({ action: 'auth-go', query: { adminKey: KEY } });
+check('adminKey -> 302', r.statusCode === 302, `status=${r.statusCode}`);
+check('ada Location authorize', String(r.headers.Location || '').includes('services.tiktokshop.com/open/authorize'), String(r.headers.Location));
+check('ada state di Location', /state=\d+\./.test(String(r.headers.Location || '')));
+check('tanam cookie tts_state', String(r.headers['Set-Cookie'] || '').includes('tts_state='), String(r.headers['Set-Cookie']));
+
 console.log(`\n== Hasil: ${pass} lolos, ${fail} gagal ==`);
 if (fail > 0) process.exit(1);
 console.log('Router test HIJAU.');
